@@ -516,7 +516,7 @@ body {
 }
 #daydetail-list { display: flex; flex-direction: column; gap: 0.6rem; max-height: 50vh; overflow-y: auto; }
 .daydetail-item {
-  display: flex; align-items: center; gap: 0.8rem;
+  display: flex; align-items: flex-start; gap: 0.8rem;
   background: #FDFAFF; border-radius: var(--radius-s); padding: 0.7rem 0.9rem;
   border: 1.5px solid #EDE8F8;
 }
@@ -528,6 +528,54 @@ body {
 .daydetail-item .hw-title { font-size: 0.9rem; }
 .daydetail-item.done .hw-title { text-decoration: line-through; color: #C8C0D8; }
 .daydetail-empty { text-align: center; color: #C0B8D0; font-size: 0.9rem; padding: 1rem 0; }
+
+/* ===== 완료 시간 표시 ===== */
+.hw-meta {
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--theme); opacity: 0.75;
+  margin-top: 0.22rem; letter-spacing: 0.1px;
+}
+
+/* ===== 별점 자기평가 ===== */
+.hw-stars {
+  display: flex; align-items: center; gap: 0.18rem;
+  margin-top: 0.35rem; flex-wrap: wrap;
+}
+.star-btn {
+  background: none; border: none;
+  font-size: 1.25rem; line-height: 1;
+  cursor: pointer; color: #DDD;
+  padding: 0.1rem 0.05rem;
+  transition: color 0.18s, transform 0.15s;
+  font-family: var(--font);
+}
+.star-btn.on    { color: #FFD700; }
+.star-btn:active { transform: scale(1.25); }
+.star-feedback {
+  font-size: 0.75rem; font-weight: 700; color: #888;
+  margin-left: 0.3rem; white-space: nowrap;
+}
+.star-hint {
+  font-size: 0.72rem; color: #CCC; margin-left: 0.3rem;
+}
+
+/* ===== 달력 셀 배지 ===== */
+.cal-badges {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.cal-avg-stars {
+  font-size: 0.58rem; font-weight: 900;
+  color: #B0A000; background: #FFFBE8;
+  border-radius: 4px; padding: 0.05rem 0.25rem;
+  white-space: nowrap;
+}
+
+/* ===== 날짜 상세 — 별점 ===== */
+.daydetail-stars {
+  font-size: 0.78rem; font-weight: 700; color: #999;
+  margin-top: 0.2rem;
+}
+.daydetail-item .hw-meta { font-size: 0.7rem; margin-top: 0.15rem; }
 
 /* ===== 반응형 ===== */
 @media (min-width: 480px) {

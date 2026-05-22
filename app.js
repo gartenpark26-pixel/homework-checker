@@ -28,8 +28,9 @@ const THEMES = {
   },
 };
 
-const SUBJ_EMOJI = { '수학':'📐', '국어':'📖', '영어':'🔤', '기타':'✏️' };
-const MOOD_EMOJI = ['🌱','🌿','⭐','🌟','🏆','🎉'];
+const SUBJ_EMOJI   = { '수학':'📐', '국어':'📖', '영어':'🔤', '기타':'✏️' };
+const MOOD_EMOJI   = ['🌱','🌿','⭐','🌟','🏆','🎉'];
+const STAR_FEEDBACK = { 1:'😅 조금 했어요', 2:'😊 열심히 했어요', 3:'🌟 완벽하게 했어요' };
 
 // ===== 유틸 =====
 function dateKey(d) {
@@ -40,15 +41,21 @@ function offsetDate(days) {
   const d = new Date(); d.setDate(d.getDate() + days); return dateKey(d);
 }
 function dateLabelShort(dateStr) {
-  const today     = todayKey();
-  const yesterday = offsetDate(-1);
-  const tomorrow  = offsetDate(1);
+  const today = todayKey(), yesterday = offsetDate(-1), tomorrow = offsetDate(1);
   const d = new Date(dateStr + 'T00:00:00');
-  const formatted = d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+  const formatted = d.toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'short' });
   if (dateStr === today)     return `오늘 · ${formatted}`;
   if (dateStr === yesterday) return `어제 · ${formatted}`;
   if (dateStr === tomorrow)  return `내일 · ${formatted}`;
   return formatted;
+}
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString('ko-KR', { hour:'numeric', minute:'2-digit', hour12:true });
+}
+function nowTimeStr() {
+  return new Date().toLocaleTimeString('ko-KR', { hour:'numeric', minute:'2-digit', hour12:true });
 }
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
@@ -62,6 +69,12 @@ function applyTheme(t) {
   r.setProperty('--theme',      t.color);
   r.setProperty('--theme-bg',   t.bg);
   r.setProperty('--theme-grad', t.grad);
+}
+function avgStars(items) {
+  const arr = items.filter(i => i.stars).map(i => i.stars);
+  if (!arr.length) return null;
+  const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+  return avg % 1 === 0 ? avg : parseFloat(avg.toFixed(1));
 }
 
 // ===== 프로필 선택 =====
@@ -136,14 +149,28 @@ function startListening() {
 
 // ===== 숙제 CRUD =====
 async function toggleDone(id, current) {
-  try { await db.collection('homework').doc(id).update({ completed: !current }); }
-  catch (e) { console.error(e); }
+  try {
+    if (!current) {
+      await db.collection('homework').doc(id).update({
+        completed: true,
+        completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    } else {
+      await db.collection('homework').doc(id).update({
+        completed: false,
+        completedAt: firebase.firestore.FieldValue.delete(),
+        stars:       firebase.firestore.FieldValue.delete(),
+      });
+    }
+  } catch (e) { console.error(e); }
 }
+
 async function deleteHw(id) {
   if (!confirm('이 숙제를 삭제할까요? 🗑️')) return;
   try { await db.collection('homework').doc(id).delete(); }
   catch (e) { console.error(e); }
 }
+
 async function addHw(title, subject) {
   await db.collection('homework').add({
     child: profile, subject, title, completed: false,
@@ -152,24 +179,59 @@ async function addHw(title, subject) {
   });
 }
 
+// ===== 별점 =====
+async function setStars(id, stars, itemType) {
+  try {
+    if (itemType === 'manual') {
+      await db.collection('homework').doc(id).update({ stars });
+    } else {
+      await db.collection('dailyChecks').doc(`${profile}_${viewDate}`)
+        .set({ [`${id}_stars`]: stars }, { merge: true });
+    }
+  } catch (e) { console.error(e); }
+}
+
 // ===== 템플릿 체크 =====
 async function toggleTemplateCheck(id, current) {
   try {
-    await db.collection('dailyChecks').doc(`${profile}_${viewDate}`)
-      .set({ [id]: !current }, { merge: true });
+    const docRef = db.collection('dailyChecks').doc(`${profile}_${viewDate}`);
+    if (!current) {
+      await docRef.set({ [id]: true, [`${id}_time`]: nowTimeStr() }, { merge: true });
+    } else {
+      await docRef.set({
+        [id]: false,
+        [`${id}_time`]:  firebase.firestore.FieldValue.delete(),
+        [`${id}_stars`]: firebase.firestore.FieldValue.delete(),
+      }, { merge: true });
+    }
   } catch (e) { console.error(e); }
 }
 
 // ===== 렌더링 =====
+function renderStars(id, stars, itemType) {
+  const btns = [1,2,3].map(n =>
+    `<button class="star-btn${(stars||0) >= n ? ' on' : ''}"
+             onclick="setStars('${id}',${n},'${itemType}')"
+             aria-label="별 ${n}개">★</button>`
+  ).join('');
+  const feedback = stars
+    ? `<span class="star-feedback">${STAR_FEEDBACK[stars]}</span>`
+    : `<span class="star-hint">평가해보세요</span>`;
+  return `<div class="hw-stars">${btns}${feedback}</div>`;
+}
+
 function render() {
   const merged = [
     ...hwData.map(h => ({ ...h, itemType: 'manual' })),
     ...templateItems.map(t => ({
       id: t.id, itemType: 'template',
       subject: t.subject, title: t.title,
-      completed: templateChecks[t.id] || false,
+      completed:        templateChecks[t.id] || false,
+      completedTimeStr: templateChecks[`${t.id}_time`] || null,
+      stars:            templateChecks[`${t.id}_stars`] || null,
     })),
   ];
+
   const total   = merged.length;
   const done    = merged.filter(h => h.completed).length;
   const pct     = total > 0 ? Math.round(done / total * 100) : 0;
@@ -198,6 +260,7 @@ function render() {
     return;
   }
   emptyEl.classList.add('hidden');
+
   listEl.innerHTML = visible.map(h => {
     const onCheck = h.itemType === 'template'
       ? `toggleTemplateCheck('${h.id}', ${h.completed})`
@@ -205,6 +268,15 @@ function render() {
     const rightEl = h.itemType === 'manual'
       ? `<button class="del-btn" onclick="deleteHw('${h.id}')" aria-label="삭제">🗑️</button>`
       : `<span class="repeat-badge" title="반복 숙제">🔁</span>`;
+
+    const timeStr = h.itemType === 'manual'
+      ? formatTime(h.completedAt)
+      : (h.completedTimeStr || '');
+    const timeLine = h.completed && timeStr
+      ? `<div class="hw-meta">${timeStr} 완료 ✓</div>`
+      : '';
+    const starLine = h.completed ? renderStars(h.id, h.stars, h.itemType) : '';
+
     return `
       <div class="hw-item ${h.completed ? 'done' : ''}" id="hw-${h.id}">
         <button class="check-btn" onclick="${onCheck}" aria-label="${h.completed?'완료 취소':'완료 체크'}">
@@ -213,6 +285,8 @@ function render() {
         <div class="hw-body">
           <div class="hw-subj">${SUBJ_EMOJI[h.subject]||''} ${esc(h.subject)}</div>
           <div class="hw-title">${esc(h.title)}</div>
+          ${timeLine}
+          ${starLine}
         </div>
         ${rightEl}
       </div>`;
@@ -406,9 +480,9 @@ function handlePinComplete() {
 }
 
 // ===== 부모 화면 =====
-let parentChild  = '시현이';
-let calYear      = 0;
-let calMonth     = 0;
+let parentChild   = '시현이';
+let calYear       = 0;
+let calMonth      = 0;
 let parentHwCache = {};
 
 function openParentView() {
@@ -432,10 +506,9 @@ function setParentChild(name) {
 function updateParentChildTabs() {
   document.querySelectorAll('.parent-child-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.child === parentChild));
-  // apply theme for parent header
-  const t = THEMES[parentChild];
-  applyTheme(t);
+  applyTheme(THEMES[parentChild]);
 }
+
 async function loadCalendarData() {
   try {
     const snap = await db.collection('homework').where('child', '==', parentChild).get();
@@ -448,12 +521,14 @@ async function loadCalendarData() {
     renderCalendar();
   } catch (e) { console.error('캘린더 로드 실패:', e); }
 }
+
 function navCalendar(dir) {
   calMonth += dir;
   if (calMonth > 12) { calMonth = 1; calYear++; }
   if (calMonth < 1)  { calMonth = 12; calYear--; }
   renderCalendar();
 }
+
 function renderCalendar() {
   const y = calYear, m = calMonth;
   document.getElementById('cal-month-label').textContent = `${y}년 ${m}월`;
@@ -468,19 +543,26 @@ function renderCalendar() {
   for (let i = 0; i < firstWeekday; i++) html += '<div class="cal-cell empty"></div>';
 
   for (let date = 1; date <= lastDate; date++) {
-    const ds  = `${y}-${String(m).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-    const hw  = parentHwCache[ds] || [];
-    const tot = hw.length;
-    const don = hw.filter(h => h.completed).length;
+    const ds       = `${y}-${String(m).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+    const hw       = parentHwCache[ds] || [];
+    const tot      = hw.length;
+    const don      = hw.filter(h => h.completed).length;
     const isFuture = ds > today;
-    let badge = '';
+    const avg      = avgStars(hw);
+
+    let doneBadge = '';
     if (tot > 0 && !isFuture) {
-      badge = don === tot
+      doneBadge = don === tot
         ? '<span class="cal-star">🌟</span>'
         : `<span class="cal-pct">${Math.round(don/tot*100)}%</span>`;
     }
+    const starBadge = avg && !isFuture
+      ? `<span class="cal-avg-stars">⭐${avg}</span>`
+      : '';
+
     html += `<div class="cal-cell${ds===today?' today':''}${tot>0?' has-hw':''}" onclick="openDayDetail('${ds}')">
-      <span class="cal-date-num">${date}</span>${badge}
+      <span class="cal-date-num">${date}</span>
+      <div class="cal-badges">${doneBadge}${starBadge}</div>
     </div>`;
   }
   html += '</div>';
@@ -489,15 +571,14 @@ function renderCalendar() {
 
 async function openDayDetail(dateStr) {
   const hw = parentHwCache[dateStr] || [];
-  let tmplChecks = {};
-  let tmplForChild = [];
+  let tmplChecks = {}, tmplForChild = [];
   try {
     const [checkSnap, tmplSnap] = await Promise.all([
       db.collection('dailyChecks').doc(`${parentChild}_${dateStr}`).get(),
       db.collection('templates').doc(parentChild).get(),
     ]);
-    tmplChecks   = checkSnap.exists  ? checkSnap.data()           : {};
-    tmplForChild = tmplSnap.exists   ? (tmplSnap.data().items||[]) : [];
+    tmplChecks   = checkSnap.exists ? checkSnap.data()            : {};
+    tmplForChild = tmplSnap.exists  ? (tmplSnap.data().items||[]) : [];
   } catch (e) { console.error(e); }
 
   const d = new Date(dateStr + 'T00:00:00');
@@ -505,24 +586,48 @@ async function openDayDetail(dateStr) {
     d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
 
   const allItems = [
-    ...hw.map(h => ({ title:h.title, subject:h.subject, completed:h.completed, type:'manual' })),
-    ...tmplForChild.map(t => ({ title:t.title, subject:t.subject, completed:tmplChecks[t.id]||false, type:'template' })),
+    ...hw.map(h => ({
+      title: h.title, subject: h.subject, completed: h.completed, type: 'manual',
+      completedAt: h.completedAt, stars: h.stars || null,
+    })),
+    ...tmplForChild.map(t => ({
+      title: t.title, subject: t.subject,
+      completed:        tmplChecks[t.id] || false, type: 'template',
+      completedTimeStr: tmplChecks[`${t.id}_time`] || null,
+      stars:            tmplChecks[`${t.id}_stars`] || null,
+    })),
   ];
-  const tot = allItems.length;
-  const don = allItems.filter(i => i.completed).length;
+
+  const tot    = allItems.length;
+  const don    = allItems.filter(i => i.completed).length;
+  const avg    = avgStars(allItems);
+  const starStr = avg ? ` · 평균 ⭐${avg}` : '';
   document.getElementById('daydetail-summary').textContent =
-    tot > 0 ? `${don} / ${tot} 완료` : '이날 숙제가 없어요';
+    tot > 0 ? `${don} / ${tot} 완료${starStr}` : '이날 숙제가 없어요';
 
   document.getElementById('daydetail-list').innerHTML = allItems.length === 0
     ? '<p class="daydetail-empty">기록이 없어요</p>'
-    : allItems.map(item => `
-        <div class="daydetail-item${item.completed?' done':''}">
-          <span class="daydetail-check">${item.completed?'✓':'○'}</span>
-          <div>
-            <div class="hw-subj">${SUBJ_EMOJI[item.subject]||''} ${esc(item.subject)}${item.type==='template'?' <span class="repeat-badge">🔁</span>':''}</div>
-            <div class="hw-title">${esc(item.title)}</div>
-          </div>
-        </div>`).join('');
+    : allItems.map(item => {
+        const timeStr = item.type === 'manual'
+          ? formatTime(item.completedAt)
+          : (item.completedTimeStr || '');
+        const timeLine = item.completed && timeStr
+          ? `<div class="hw-meta">${timeStr} 완료 ✓</div>`
+          : '';
+        const starLine = item.stars
+          ? `<div class="daydetail-stars">${'★'.repeat(item.stars)}${'☆'.repeat(3-item.stars)} ${STAR_FEEDBACK[item.stars]}</div>`
+          : '';
+        return `
+          <div class="daydetail-item${item.completed?' done':''}">
+            <span class="daydetail-check">${item.completed?'✓':'○'}</span>
+            <div style="flex:1;min-width:0">
+              <div class="hw-subj">${SUBJ_EMOJI[item.subject]||''} ${esc(item.subject)}${item.type==='template'?' <span class="repeat-badge">🔁</span>':''}</div>
+              <div class="hw-title">${esc(item.title)}</div>
+              ${timeLine}
+              ${starLine}
+            </div>
+          </div>`;
+      }).join('');
 
   document.getElementById('overlay-daydetail').classList.add('on');
   document.getElementById('modal-daydetail').classList.add('on');

@@ -1,4 +1,4 @@
-const CACHE = 'hw-checker-v2';
+const CACHE = 'hw-checker-v3';
 const STATIC_FILES = [
   '/',
   '/index.html',

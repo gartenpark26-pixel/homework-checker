@@ -6,11 +6,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="숙제완료">
-  <meta name="theme-color" content="#FF6B9D">
+  <meta name="theme-color" content="#F0A8CB">
   <title>숙제 완료!</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,42 +21,96 @@
   <!-- ===== 프로필 선택 화면 ===== -->
   <div id="screen-profile">
     <div class="profile-deco" aria-hidden="true">
-      <span>⭐</span><span>📚</span><span>✏️</span><span>🌟</span><span>📝</span><span>🎒</span>
+      <span>🌸</span><span>⭐</span><span>🌷</span><span>✨</span><span>🌼</span><span>💫</span>
     </div>
     <div class="profile-content">
-      <div class="app-logo">📚</div>
+      <div class="app-logo-wrap">
+        <svg viewBox="0 0 60 60" class="app-logo-svg" aria-hidden="true">
+          <circle cx="30" cy="30" r="28" fill="#FDE8F4"/>
+          <text x="30" y="40" text-anchor="middle" font-size="28">📚</text>
+        </svg>
+      </div>
       <h1 class="app-title">숙제 완료!</h1>
       <p class="app-sub">누구의 숙제함인가요?</p>
+
       <div class="profile-cards">
+        <!-- 시현이 카드 (토끼) -->
         <button class="profile-card sihyeon-card" onclick="selectProfile('시현이')">
-          <span class="card-emoji">🦄</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" class="character-svg" aria-hidden="true">
+            <ellipse cx="30" cy="30" rx="12" ry="27" fill="#F8C8DC"/>
+            <ellipse cx="70" cy="30" rx="12" ry="27" fill="#F8C8DC"/>
+            <ellipse cx="30" cy="30" rx="7"  ry="20" fill="#F0A0BF"/>
+            <ellipse cx="70" cy="30" rx="7"  ry="20" fill="#F0A0BF"/>
+            <circle  cx="50" cy="80" r="38"  fill="#FDF2F8"/>
+            <ellipse cx="30" cy="88" rx="10" ry="7"  fill="#FFB8D8" opacity="0.5"/>
+            <ellipse cx="70" cy="88" rx="10" ry="7"  fill="#FFB8D8" opacity="0.5"/>
+            <circle  cx="39" cy="74" r="5.5" fill="#4A3040"/>
+            <circle  cx="61" cy="74" r="5.5" fill="#4A3040"/>
+            <circle  cx="40.5" cy="72.5" r="2" fill="white"/>
+            <circle  cx="62.5" cy="72.5" r="2" fill="white"/>
+            <ellipse cx="50" cy="83" rx="4.5" ry="3" fill="#F0A0BF"/>
+            <path d="M44 89 Q50 95 56 89" stroke="#D880A8" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>
           <span class="card-name">시현이</span>
-          <span class="card-badge sihyeon-badge">핑크팀</span>
+          <span class="card-badge sihyeon-badge">핑크팀 🌸</span>
         </button>
+
+        <!-- 시온이 카드 (곰) -->
         <button class="profile-card sion-card" onclick="selectProfile('시온이')">
-          <span class="card-emoji">🚀</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="character-svg" aria-hidden="true">
+            <circle  cx="22"  cy="26"  r="18"  fill="#B0D8F0"/>
+            <circle  cx="78"  cy="26"  r="18"  fill="#B0D8F0"/>
+            <circle  cx="22"  cy="26"  r="11"  fill="#C8EAFF"/>
+            <circle  cx="78"  cy="26"  r="11"  fill="#C8EAFF"/>
+            <circle  cx="50"  cy="62"  r="36"  fill="#C8EAFF"/>
+            <ellipse cx="50"  cy="72"  rx="16" ry="12" fill="#B0D8F0"/>
+            <ellipse cx="30"  cy="68"  rx="9"  ry="7"  fill="#90C8E8" opacity="0.4"/>
+            <ellipse cx="70"  cy="68"  rx="9"  ry="7"  fill="#90C8E8" opacity="0.4"/>
+            <circle  cx="39"  cy="57"  r="5.5" fill="#3A4060"/>
+            <circle  cx="61"  cy="57"  r="5.5" fill="#3A4060"/>
+            <circle  cx="40.5" cy="55.5" r="2" fill="white"/>
+            <circle  cx="62.5" cy="55.5" r="2" fill="white"/>
+            <ellipse cx="50"  cy="67"  rx="5"  ry="3.5" fill="#80B8D8"/>
+            <path d="M43 74 Q50 80 57 74" stroke="#70A8C8" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>
           <span class="card-name">시온이</span>
-          <span class="card-badge sion-badge">블루팀</span>
+          <span class="card-badge sion-badge">블루팀 🐻</span>
         </button>
       </div>
+
+      <!-- 부모 버튼 -->
+      <button class="parent-btn" onclick="openPinModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 28" width="36" height="28" aria-hidden="true">
+          <circle cx="11" cy="10" r="7"  fill="#C5B0E0"/>
+          <path d="M0 28 Q0 18 11 18 Q22 18 22 28" fill="#C5B0E0"/>
+          <circle cx="25" cy="8"  r="8.5" fill="#A890D0"/>
+          <path d="M14 28 Q14 16 25 16 Q36 16 36 28" fill="#A890D0"/>
+        </svg>
+        <span>부모 확인</span>
+        <span class="parent-btn-arrow">›</span>
+      </button>
     </div>
   </div>
 
   <!-- ===== 메인 숙제 화면 ===== -->
   <div id="screen-main" class="hidden">
 
-    <!-- 헤더 -->
     <header id="main-header">
       <button class="back-btn" onclick="goBack()" aria-label="뒤로가기">‹ 뒤로</button>
       <div class="header-center">
-        <span id="hdr-emoji"></span>
         <span id="hdr-name"></span>
-        <span class="header-subtitle" id="hdr-date"></span>
       </div>
       <div class="header-right">
         <button class="tmpl-btn" onclick="openTemplate()" aria-label="반복 숙제 템플릿">📋</button>
       </div>
     </header>
+
+    <!-- 날짜 이동 바 -->
+    <div class="date-nav">
+      <button class="date-nav-btn" onclick="navDate(-1)" aria-label="어제">‹</button>
+      <span id="date-nav-label">오늘</span>
+      <button class="date-nav-btn" onclick="navDate(1)" aria-label="내일">›</button>
+    </div>
 
     <!-- 진행률 카드 -->
     <div class="progress-card">
@@ -81,49 +138,65 @@
       <button class="filter-chip" data-subj="기타" onclick="setFilter('기타',this)" role="tab">✏️ 기타</button>
     </div>
 
-    <!-- 숙제 목록 -->
     <main id="hw-list" aria-label="숙제 목록"></main>
 
-    <!-- 빈 상태 -->
     <div id="empty-state" class="state-box hidden">
-      <div class="state-icon">📋</div>
-      <p id="empty-text">오늘 숙제가 없어요!<br><small>+ 버튼으로 추가해보세요 🎒</small></p>
+      <div class="state-icon">🌸</div>
+      <p id="empty-text">숙제가 없어요!<br><small>+ 버튼으로 추가해보세요 🎒</small></p>
     </div>
 
-    <!-- 전부 완료 -->
     <div id="all-done-state" class="state-box hidden">
       <div class="state-icon celebrate">🎉</div>
-      <p>모든 숙제 완료!<br><small>정말 대단해요! 오늘도 최고야! ⭐</small></p>
+      <p>모든 숙제 완료!<br><small>정말 대단해요! 최고야! ⭐</small></p>
     </div>
 
-    <!-- 추가 버튼 (FAB) -->
     <button id="fab" class="fab" onclick="openModal()" aria-label="숙제 추가">＋</button>
   </div>
 
   <!-- ===== 템플릿 관리 화면 ===== -->
   <div id="screen-template" class="hidden">
-
-    <!-- 헤더 -->
     <header id="tmpl-header">
       <button class="back-btn" onclick="closeTemplate()">‹ 뒤로</button>
-      <div class="header-center">
-        <span>📋 반복 숙제 템플릿</span>
-      </div>
+      <div class="header-center"><span>📋 반복 숙제 템플릿</span></div>
       <div class="header-right"></div>
     </header>
-
     <div class="tmpl-desc-box">
       <p>매일 자동으로 표시되는 숙제를 설정해요<br><small>체크는 날짜별로 따로 저장돼요 ✨</small></p>
     </div>
-
     <div id="tmpl-list"></div>
-
     <div id="tmpl-empty" class="state-box hidden">
       <div class="state-icon">🔁</div>
       <p>반복 숙제가 없어요!<br><small>+ 버튼으로 추가해보세요</small></p>
     </div>
-
     <button id="fab-tmpl" class="fab" onclick="openTmplModal()" aria-label="반복 숙제 추가">＋</button>
+  </div>
+
+  <!-- ===== 부모 확인 화면 ===== -->
+  <div id="screen-parent" class="hidden">
+    <header id="parent-header">
+      <button class="back-btn" onclick="closeParentView()">‹ 뒤로</button>
+      <div class="header-center"><span>👨‍👩‍👧 부모 확인</span></div>
+      <div class="header-right"></div>
+    </header>
+
+    <div class="parent-child-tabs">
+      <button class="parent-child-tab active" data-child="시현이" onclick="setParentChild('시현이')">🐰 시현이</button>
+      <button class="parent-child-tab" data-child="시온이" onclick="setParentChild('시온이')">🐻 시온이</button>
+    </div>
+
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="navCalendar(-1)">‹</button>
+      <span id="cal-month-label"></span>
+      <button class="cal-nav-btn" onclick="navCalendar(1)">›</button>
+    </div>
+
+    <div id="cal-grid-wrap"></div>
+
+    <div class="cal-legend">
+      <span>🌟 = 모두 완료</span>
+      <span class="cal-legend-sep">·</span>
+      <span>% = 부분 완료</span>
+    </div>
   </div>
 
   <!-- ===== 숙제 추가 모달 ===== -->
@@ -131,7 +204,6 @@
   <div id="modal" class="modal" role="dialog" aria-label="숙제 추가">
     <div class="modal-handle"></div>
     <h2 class="modal-title">✏️ 숙제 추가</h2>
-
     <p class="field-label">과목 선택</p>
     <div class="subj-grid">
       <button class="subj-btn active" data-s="수학" onclick="pickSubj(this)">📐<br>수학</button>
@@ -139,12 +211,10 @@
       <button class="subj-btn" data-s="영어" onclick="pickSubj(this)">🔤<br>영어</button>
       <button class="subj-btn" data-s="기타" onclick="pickSubj(this)">✏️<br>기타</button>
     </div>
-
     <p class="field-label">숙제 내용</p>
     <input id="hw-input" class="hw-input" type="text"
            placeholder="예: 수학 문제집 3쪽 풀기" maxlength="60"
            onkeydown="if(event.key==='Enter') submitHw()" autocomplete="off">
-
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
       <button id="btn-add" class="btn-add" onclick="submitHw()">추가하기</button>
@@ -156,7 +226,6 @@
   <div id="modal-tmpl" class="modal" role="dialog" aria-label="반복 숙제 추가">
     <div class="modal-handle"></div>
     <h2 class="modal-title">🔁 반복 숙제 추가</h2>
-
     <p class="field-label">과목 선택</p>
     <div class="subj-grid">
       <button class="subj-btn tmpl-subj-btn active" data-s="수학" onclick="pickTmplSubj(this)">📐<br>수학</button>
@@ -164,15 +233,53 @@
       <button class="subj-btn tmpl-subj-btn" data-s="영어" onclick="pickTmplSubj(this)">🔤<br>영어</button>
       <button class="subj-btn tmpl-subj-btn" data-s="기타" onclick="pickTmplSubj(this)">✏️<br>기타</button>
     </div>
-
     <p class="field-label">숙제 내용</p>
     <input id="tmpl-input" class="hw-input" type="text"
            placeholder="예: 일기 쓰기" maxlength="60"
            onkeydown="if(event.key==='Enter') submitTmpl()" autocomplete="off">
-
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeTmplModal()">취소</button>
       <button id="btn-add-tmpl" class="btn-add" onclick="submitTmpl()">추가하기</button>
+    </div>
+  </div>
+
+  <!-- ===== PIN 모달 ===== -->
+  <div id="overlay-pin" class="overlay"></div>
+  <div id="modal-pin" class="modal pin-modal" role="dialog" aria-label="PIN 입력">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="pin-title">🔒 부모 확인</h2>
+    <p class="pin-hint" id="pin-hint">PIN 번호를 입력해주세요</p>
+    <div class="pin-dots" id="pin-dots">
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinInput('1')">1</button>
+      <button class="pin-key" onclick="pinInput('2')">2</button>
+      <button class="pin-key" onclick="pinInput('3')">3</button>
+      <button class="pin-key" onclick="pinInput('4')">4</button>
+      <button class="pin-key" onclick="pinInput('5')">5</button>
+      <button class="pin-key" onclick="pinInput('6')">6</button>
+      <button class="pin-key" onclick="pinInput('7')">7</button>
+      <button class="pin-key" onclick="pinInput('8')">8</button>
+      <button class="pin-key" onclick="pinInput('9')">9</button>
+      <button class="pin-key pin-action" onclick="cancelPin()">취소</button>
+      <button class="pin-key" onclick="pinInput('0')">0</button>
+      <button class="pin-key pin-action" onclick="pinBackspace()">⌫</button>
+    </div>
+  </div>
+
+  <!-- ===== 날짜 상세 모달 (부모용) ===== -->
+  <div id="overlay-daydetail" class="overlay" onclick="closeDayDetail()"></div>
+  <div id="modal-daydetail" class="modal" role="dialog" aria-label="날짜 상세">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="daydetail-date"></h2>
+    <p class="daydetail-summary" id="daydetail-summary"></p>
+    <div id="daydetail-list"></div>
+    <div class="modal-actions" style="margin-top:1.2rem">
+      <button class="btn-cancel" style="flex:1" onclick="closeDayDetail()">닫기</button>
     </div>
   </div>
 

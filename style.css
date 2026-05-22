@@ -10,15 +10,15 @@
   --shadow-m: 0 4px 20px rgba(0,0,0,0.12);
   --shadow-l: 0 8px 36px rgba(0,0,0,0.16);
 
-  /* 씽씽이 — 핑크·퍼플 */
-  --ssingi-c:    #FF6B9D;
-  --ssingi-grad: linear-gradient(135deg, #FF6B9D 0%, #C44DE0 100%);
-  --ssingi-bg:   #FFF0F7;
+  /* 시현이 — 핑크·퍼플 */
+  --sihyeon-c:    #FF6B9D;
+  --sihyeon-grad: linear-gradient(135deg, #FF6B9D 0%, #C44DE0 100%);
+  --sihyeon-bg:   #FFF0F7;
 
-  /* 동동이 — 틸·블루 */
-  --dongdong-c:    #26C6DA;
-  --dongdong-grad: linear-gradient(135deg, #26C6DA 0%, #1976D2 100%);
-  --dongdong-bg:   #EDFCFE;
+  /* 시온이 — 틸·블루 */
+  --sion-c:    #26C6DA;
+  --sion-grad: linear-gradient(135deg, #26C6DA 0%, #1976D2 100%);
+  --sion-bg:   #EDFCFE;
 
   /* 현재 테마 (JS가 덮어씀) */
   --theme:    #FF6B9D;
@@ -132,8 +132,8 @@ body {
   top: 0; left: 0; right: 0;
   height: 6px;
 }
-.ssingi-card::before  { background: var(--ssingi-grad); }
-.dongdong-card::before { background: var(--dongdong-grad); }
+.sihyeon-card::before { background: var(--sihyeon-grad); }
+.sion-card::before    { background: var(--sion-grad); }
 
 .profile-card:active  { transform: scale(0.95); }
 .profile-card:hover   { transform: translateY(-5px); box-shadow: var(--shadow-l); }
@@ -149,8 +149,8 @@ body {
   color: white;
   letter-spacing: 0.3px;
 }
-.ssingi-badge  { background: var(--ssingi-grad); }
-.dongdong-badge { background: var(--dongdong-grad); }
+.sihyeon-badge { background: var(--sihyeon-grad); }
+.sion-badge    { background: var(--sion-grad); }
 
 /* ===== 메인 화면 ===== */
 #screen-main {
@@ -560,4 +560,85 @@ body {
   .app-logo     { font-size: 2.8rem; }
   .app-title    { font-size: 2.2rem; }
   .card-emoji   { font-size: 2.8rem; }
+}
+
+/* ===== 헤더 템플릿 버튼 ===== */
+.tmpl-btn {
+  background: rgba(255,255,255,0.22);
+  border: none;
+  border-radius: 50px;
+  color: white;
+  font-size: 1.05rem;
+  padding: 0.38rem 0.65rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: var(--font);
+  line-height: 1;
+}
+.tmpl-btn:active { background: rgba(255,255,255,0.38); }
+
+/* ===== 반복 숙제 뱃지 (메인 목록) ===== */
+.repeat-badge {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  opacity: 0.55;
+  line-height: 1;
+}
+
+/* ===== 템플릿 관리 화면 ===== */
+#screen-template {
+  min-height: 100dvh;
+  background: var(--theme-bg);
+  display: block;
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+#tmpl-header {
+  background: var(--theme-grad);
+  padding: calc(0.9rem + env(safe-area-inset-top)) 1.2rem 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  color: white;
+}
+
+.tmpl-desc-box {
+  margin: 0.9rem 1rem 0.5rem;
+  background: white;
+  border-radius: var(--radius-m);
+  padding: 0.9rem 1.2rem;
+  box-shadow: var(--shadow-s);
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.tmpl-desc-box small { color: #AAA; font-size: 0.82rem; }
+
+#tmpl-list {
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+}
+
+/* 순번 원형 */
+.tmpl-order {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--theme);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }

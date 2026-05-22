@@ -25,15 +25,15 @@
       <h1 class="app-title">숙제 완료!</h1>
       <p class="app-sub">누구의 숙제함인가요?</p>
       <div class="profile-cards">
-        <button class="profile-card ssingi-card" onclick="selectProfile('씽씽이')">
+        <button class="profile-card sihyeon-card" onclick="selectProfile('시현이')">
           <span class="card-emoji">🦄</span>
-          <span class="card-name">씽씽이</span>
-          <span class="card-badge ssingi-badge">핑크팀</span>
+          <span class="card-name">시현이</span>
+          <span class="card-badge sihyeon-badge">핑크팀</span>
         </button>
-        <button class="profile-card dongdong-card" onclick="selectProfile('동동이')">
+        <button class="profile-card sion-card" onclick="selectProfile('시온이')">
           <span class="card-emoji">🚀</span>
-          <span class="card-name">동동이</span>
-          <span class="card-badge dongdong-badge">블루팀</span>
+          <span class="card-name">시온이</span>
+          <span class="card-badge sion-badge">블루팀</span>
         </button>
       </div>
     </div>
@@ -50,7 +50,9 @@
         <span id="hdr-name"></span>
         <span class="header-subtitle" id="hdr-date"></span>
       </div>
-      <div class="header-right"></div>
+      <div class="header-right">
+        <button class="tmpl-btn" onclick="openTemplate()" aria-label="반복 숙제 템플릿">📋</button>
+      </div>
     </header>
 
     <!-- 진행률 카드 -->
@@ -98,6 +100,32 @@
     <button id="fab" class="fab" onclick="openModal()" aria-label="숙제 추가">＋</button>
   </div>
 
+  <!-- ===== 템플릿 관리 화면 ===== -->
+  <div id="screen-template" class="hidden">
+
+    <!-- 헤더 -->
+    <header id="tmpl-header">
+      <button class="back-btn" onclick="closeTemplate()">‹ 뒤로</button>
+      <div class="header-center">
+        <span>📋 반복 숙제 템플릿</span>
+      </div>
+      <div class="header-right"></div>
+    </header>
+
+    <div class="tmpl-desc-box">
+      <p>매일 자동으로 표시되는 숙제를 설정해요<br><small>체크는 날짜별로 따로 저장돼요 ✨</small></p>
+    </div>
+
+    <div id="tmpl-list"></div>
+
+    <div id="tmpl-empty" class="state-box hidden">
+      <div class="state-icon">🔁</div>
+      <p>반복 숙제가 없어요!<br><small>+ 버튼으로 추가해보세요</small></p>
+    </div>
+
+    <button id="fab-tmpl" class="fab" onclick="openTmplModal()" aria-label="반복 숙제 추가">＋</button>
+  </div>
+
   <!-- ===== 숙제 추가 모달 ===== -->
   <div id="overlay" class="overlay" onclick="closeModal()"></div>
   <div id="modal" class="modal" role="dialog" aria-label="숙제 추가">
@@ -120,6 +148,31 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
       <button id="btn-add" class="btn-add" onclick="submitHw()">추가하기</button>
+    </div>
+  </div>
+
+  <!-- ===== 반복 숙제 추가 모달 ===== -->
+  <div id="overlay-tmpl" class="overlay" onclick="closeTmplModal()"></div>
+  <div id="modal-tmpl" class="modal" role="dialog" aria-label="반복 숙제 추가">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title">🔁 반복 숙제 추가</h2>
+
+    <p class="field-label">과목 선택</p>
+    <div class="subj-grid">
+      <button class="subj-btn tmpl-subj-btn active" data-s="수학" onclick="pickTmplSubj(this)">📐<br>수학</button>
+      <button class="subj-btn tmpl-subj-btn" data-s="국어" onclick="pickTmplSubj(this)">📖<br>국어</button>
+      <button class="subj-btn tmpl-subj-btn" data-s="영어" onclick="pickTmplSubj(this)">🔤<br>영어</button>
+      <button class="subj-btn tmpl-subj-btn" data-s="기타" onclick="pickTmplSubj(this)">✏️<br>기타</button>
+    </div>
+
+    <p class="field-label">숙제 내용</p>
+    <input id="tmpl-input" class="hw-input" type="text"
+           placeholder="예: 일기 쓰기" maxlength="60"
+           onkeydown="if(event.key==='Enter') submitTmpl()" autocomplete="off">
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeTmplModal()">취소</button>
+      <button id="btn-add-tmpl" class="btn-add" onclick="submitTmpl()">추가하기</button>
     </div>
   </div>
 

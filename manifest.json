@@ -1,0 +1,20 @@
+{
+  "name": "숙제 완료!",
+  "short_name": "숙제완료",
+  "description": "씽씽이와 동동이의 숙제 관리 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF0F7",
+  "theme_color": "#FF6B9D",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"]
+}

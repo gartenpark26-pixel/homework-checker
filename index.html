@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="숙제완료">
+  <meta name="theme-color" content="#FF6B9D">
+  <title>숙제 완료!</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== 프로필 선택 화면 ===== -->
+  <div id="screen-profile">
+    <div class="profile-deco" aria-hidden="true">
+      <span>⭐</span><span>📚</span><span>✏️</span><span>🌟</span><span>📝</span><span>🎒</span>
+    </div>
+    <div class="profile-content">
+      <div class="app-logo">📚</div>
+      <h1 class="app-title">숙제 완료!</h1>
+      <p class="app-sub">누구의 숙제함인가요?</p>
+      <div class="profile-cards">
+        <button class="profile-card ssingi-card" onclick="selectProfile('씽씽이')">
+          <span class="card-emoji">🦄</span>
+          <span class="card-name">씽씽이</span>
+          <span class="card-badge ssingi-badge">핑크팀</span>
+        </button>
+        <button class="profile-card dongdong-card" onclick="selectProfile('동동이')">
+          <span class="card-emoji">🚀</span>
+          <span class="card-name">동동이</span>
+          <span class="card-badge dongdong-badge">블루팀</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 메인 숙제 화면 ===== -->
+  <div id="screen-main" class="hidden">
+
+    <!-- 헤더 -->
+    <header id="main-header">
+      <button class="back-btn" onclick="goBack()" aria-label="뒤로가기">‹ 뒤로</button>
+      <div class="header-center">
+        <span id="hdr-emoji"></span>
+        <span id="hdr-name"></span>
+        <span class="header-subtitle" id="hdr-date"></span>
+      </div>
+      <div class="header-right"></div>
+    </header>
+
+    <!-- 진행률 카드 -->
+    <div class="progress-card">
+      <div class="progress-top">
+        <div class="progress-count">
+          <span class="count-done" id="cnt-done">0</span>
+          <span class="count-sep">/</span>
+          <span class="count-total" id="cnt-total">0</span>
+          <span class="count-label">완료</span>
+        </div>
+        <span class="progress-mood" id="prog-mood">🌱</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+      <div class="progress-pct" id="prog-pct">0%</div>
+    </div>
+
+    <!-- 과목 필터 -->
+    <div class="filter-bar" role="tablist">
+      <button class="filter-chip active" data-subj="전체" onclick="setFilter('전체',this)" role="tab">전체</button>
+      <button class="filter-chip" data-subj="수학" onclick="setFilter('수학',this)" role="tab">📐 수학</button>
+      <button class="filter-chip" data-subj="국어" onclick="setFilter('국어',this)" role="tab">📖 국어</button>
+      <button class="filter-chip" data-subj="영어" onclick="setFilter('영어',this)" role="tab">🔤 영어</button>
+      <button class="filter-chip" data-subj="기타" onclick="setFilter('기타',this)" role="tab">✏️ 기타</button>
+    </div>
+
+    <!-- 숙제 목록 -->
+    <main id="hw-list" aria-label="숙제 목록"></main>
+
+    <!-- 빈 상태 -->
+    <div id="empty-state" class="state-box hidden">
+      <div class="state-icon">📋</div>
+      <p id="empty-text">오늘 숙제가 없어요!<br><small>+ 버튼으로 추가해보세요 🎒</small></p>
+    </div>
+
+    <!-- 전부 완료 -->
+    <div id="all-done-state" class="state-box hidden">
+      <div class="state-icon celebrate">🎉</div>
+      <p>모든 숙제 완료!<br><small>정말 대단해요! 오늘도 최고야! ⭐</small></p>
+    </div>
+
+    <!-- 추가 버튼 (FAB) -->
+    <button id="fab" class="fab" onclick="openModal()" aria-label="숙제 추가">＋</button>
+  </div>
+
+  <!-- ===== 숙제 추가 모달 ===== -->
+  <div id="overlay" class="overlay" onclick="closeModal()"></div>
+  <div id="modal" class="modal" role="dialog" aria-label="숙제 추가">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title">✏️ 숙제 추가</h2>
+
+    <p class="field-label">과목 선택</p>
+    <div class="subj-grid">
+      <button class="subj-btn active" data-s="수학" onclick="pickSubj(this)">📐<br>수학</button>
+      <button class="subj-btn" data-s="국어" onclick="pickSubj(this)">📖<br>국어</button>
+      <button class="subj-btn" data-s="영어" onclick="pickSubj(this)">🔤<br>영어</button>
+      <button class="subj-btn" data-s="기타" onclick="pickSubj(this)">✏️<br>기타</button>
+    </div>
+
+    <p class="field-label">숙제 내용</p>
+    <input id="hw-input" class="hw-input" type="text"
+           placeholder="예: 수학 문제집 3쪽 풀기" maxlength="60"
+           onkeydown="if(event.key==='Enter') submitHw()" autocomplete="off">
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button id="btn-add" class="btn-add" onclick="submitHw()">추가하기</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

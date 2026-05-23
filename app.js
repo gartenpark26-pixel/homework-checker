@@ -481,6 +481,7 @@ let parentChild   = '시현이';
 let calYear       = 0;
 let calMonth      = 0;
 let parentHwCache = {};
+let unsubParent   = null;
 
 function openParentView() {
   const now = new Date();
@@ -492,6 +493,7 @@ function openParentView() {
   loadCalendarData();
 }
 function closeParentView() {
+  if (unsubParent) { unsubParent(); unsubParent = null; }
   document.getElementById('screen-parent').classList.add('hidden');
   document.getElementById('screen-profile').classList.remove('hidden');
 }
@@ -506,18 +508,20 @@ function updateParentChildTabs() {
   applyTheme(THEMES[parentChild]);
 }
 
-async function loadCalendarData() {
+function loadCalendarData() {
+  if (unsubParent) { unsubParent(); unsubParent = null; }
   parentHwCache = {};
   renderCalendar();
-  try {
-    const snap = await db.collection('homework').where('child', '==', parentChild).get();
-    snap.docs.forEach(d => {
-      const data = d.data();
-      if (!parentHwCache[data.date]) parentHwCache[data.date] = [];
-      parentHwCache[data.date].push({ id: d.id, ...data });
-    });
-    renderCalendar();
-  } catch (e) { console.error('캘린더 로드 실패:', e); }
+  unsubParent = db.collection('homework').where('child', '==', parentChild)
+    .onSnapshot(snap => {
+      parentHwCache = {};
+      snap.docs.forEach(d => {
+        const data = d.data();
+        if (!parentHwCache[data.date]) parentHwCache[data.date] = [];
+        parentHwCache[data.date].push({ id: d.id, ...data });
+      });
+      renderCalendar();
+    }, e => console.error('캘린더 로드 실패:', e));
 }
 
 function navCalendar(dir) {
@@ -568,13 +572,14 @@ function renderCalendar() {
 }
 
 async function openDayDetail(dateStr) {
-  const hw = parentHwCache[dateStr] || [];
-  let tmplChecks = {}, tmplForChild = [];
+  let hw = [], tmplChecks = {}, tmplForChild = [];
   try {
-    const [checkSnap, tmplSnap] = await Promise.all([
+    const [hwSnap, checkSnap, tmplSnap] = await Promise.all([
+      db.collection('homework').where('child', '==', parentChild).where('date', '==', dateStr).get(),
       db.collection('dailyChecks').doc(`${parentChild}_${dateStr}`).get(),
       db.collection('templates').doc(parentChild).get(),
     ]);
+    hw           = hwSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     tmplChecks   = checkSnap.exists ? checkSnap.data()            : {};
     tmplForChild = tmplSnap.exists  ? (tmplSnap.data().items||[]) : [];
   } catch (e) { console.error(e); }

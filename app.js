@@ -563,6 +563,7 @@ function loadCalendarData() {
         if (!parentHwCache[data.date]) parentHwCache[data.date] = [];
         parentHwCache[data.date].push({ id: d.id, ...data });
       });
+      console.log('[DBG] homework onSnapshot:', snap.docs.length, '건, 날짜키:', Object.keys(parentHwCache).sort().slice(-5));
       renderCalendar();
     }, e => console.error('캘린더 로드 실패:', e));
   loadMonthChecks();
@@ -571,6 +572,7 @@ function loadCalendarData() {
 function loadMonthChecks() {
   const yr = calYear, mo = calMonth, child = parentChild;
   const mm = `${yr}-${String(mo).padStart(2,'0')}`;
+  console.log('[DBG] loadMonthChecks 쿼리 범위:', `${child}_${mm}-01 ~ ${child}_${mm}-31`);
   monthChecksPromise = (async () => {
     try {
       const [tmplSnap, checksSnap] = await Promise.all([
@@ -580,11 +582,16 @@ function loadMonthChecks() {
           .where(firebase.firestore.FieldPath.documentId(), '<=', `${child}_${mm}-31`)
           .get(),
       ]);
+      console.log('[DBG] dailyChecks 결과:', checksSnap.docs.length, '개 → IDs:', checksSnap.docs.map(d => d.id));
+      console.log('[DBG] templates 항목수:', tmplSnap.exists ? (tmplSnap.data().items || []).length : 0);
       if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
       parentTmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
       checksSnap.docs.forEach(d => {
         parentChecksCache[d.id.slice(child.length + 1)] = d.data();
       });
+      console.log('[DBG] parentChecksCache 키:', Object.keys(parentChecksCache));
+      // ← [BUG 1] 여기서 renderCalendar() 호출이 없었음 → 캐시가 채워져도 달력이 갱신 안 됨
+      renderCalendar();
     } catch (e) { console.error('월별 데이터 로드 실패:', e); }
   })();
 }
@@ -614,10 +621,16 @@ function renderCalendar() {
   for (let date = 1; date <= lastDate; date++) {
     const ds       = `${y}-${String(m).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
     const hw       = parentHwCache[ds] || [];
-    const tot      = hw.length;
-    const don      = hw.filter(h => h.completed).length;
+    const checks   = parentChecksCache[ds] || {};
+    // [BUG 2 수정] 반복숙제 완료 수 포함
+    const tmplDone = parentTmplItems.filter(t => checks[t.id] === true).length;
+    const tot      = hw.length + parentTmplItems.length;
+    const don      = hw.filter(h => h.completed).length + tmplDone;
     const isFuture = ds > today;
-    const avg      = avgStars(hw);
+    const avg      = avgStars([
+      ...hw,
+      ...parentTmplItems.map(t => ({ stars: checks[`${t.id}_stars`] || null })),
+    ]);
 
     let doneBadge = '';
     if (tot > 0 && !isFuture) {
@@ -629,7 +642,7 @@ function renderCalendar() {
       ? `<span class="cal-avg-stars">⭐${avg}</span>`
       : '';
 
-    html += `<div class="cal-cell${ds===today?' today':''}${tot>0?' has-hw':''}" onclick="openDayDetail('${ds}')">
+    html += `<div class="cal-cell${ds===today?' today':''}${hw.length>0?' has-hw':''}" onclick="openDayDetail('${ds}')">
       <span class="cal-date-num">${date}</span>
       <div class="cal-badges">${doneBadge}${starBadge}</div>
     </div>`;
@@ -649,7 +662,9 @@ async function openDayDetail(dateStr) {
   document.getElementById('overlay-daydetail').classList.add('on');
   document.getElementById('modal-daydetail').classList.add('on');
 
-  await monthChecksPromise;
+  // 최대 3초 대기 후 부분 데이터라도 표시
+  await Promise.race([monthChecksPromise, new Promise(r => setTimeout(r, 3000))]);
+  console.log('[DBG] openDayDetail', dateStr, '| hw:', (parentHwCache[dateStr]||[]).length, '| tmpl:', parentTmplItems.length, '| checks:', !!parentChecksCache[dateStr]);
 
   const hw = parentHwCache[dateStr] || [];
   const tmplForChild = parentTmplItems;

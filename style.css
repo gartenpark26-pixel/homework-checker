@@ -212,14 +212,18 @@ body {
 /* 숙제 아이템 */
 .hw-item {
   background: white; border-radius: var(--radius-m);
-  padding: 0.9rem 1rem; display: flex; align-items: flex-start; gap: 0.9rem;
-  box-shadow: var(--shadow-s); animation: slideUp 0.26s ease; transition: opacity 0.35s ease;
+  padding: 0.9rem 1rem; display: flex; align-items: flex-start;
+  gap: 0 0.9rem; flex-wrap: wrap;
+  box-shadow: var(--shadow-s); animation: slideUp 0.26s ease;
 }
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.hw-item.done { opacity: 0.5; }
+.hw-item.done > .check-btn,
+.hw-item.done > .hw-body,
+.hw-item.done > .del-btn,
+.hw-item.done > .repeat-badge { opacity: 0.5; }
 
 .check-btn {
   width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
@@ -506,7 +510,7 @@ body {
 /* ===== 별점 자기평가 ===== */
 .hw-stars {
   display: flex; align-items: center; gap: 0;
-  margin-top: 0.4rem;
+  flex-basis: 100%; margin-left: calc(36px + 0.9rem); margin-top: 0.3rem;
 }
 /* 비활성: 체크 전 */
 .hw-stars.disabled { pointer-events: none; }

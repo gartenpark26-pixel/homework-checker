@@ -286,9 +286,9 @@ function render() {
           <div class="hw-subj">${SUBJ_EMOJI[h.subject]||''} ${esc(h.subject)}</div>
           <div class="hw-title">${esc(h.title)}</div>
           ${timeLine}
-          ${starLine}
         </div>
         ${rightEl}
+        ${starLine}
       </div>`;
   }).join('');
 }
@@ -325,20 +325,15 @@ function pickSubj(btn) {
   document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
-async function submitHw() {
+function submitHw() {
   const input = document.getElementById('hw-input');
   const title = input.value.trim();
   if (!title) {
     input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
     input.focus(); return;
   }
-  const btn = document.getElementById('btn-add');
-  btn.disabled = true; btn.textContent = '추가 중…';
-  try { await addHw(title, newSubj); closeModal(); }
-  catch (e) {
-    console.error(e); alert('숙제 추가에 실패했어요.');
-    btn.disabled = false; btn.textContent = '추가하기';
-  }
+  closeModal();
+  addHw(title, newSubj).catch(e => { console.error(e); alert('숙제 추가에 실패했어요.'); });
 }
 
 // ===== 템플릿 화면 =====
@@ -512,9 +507,10 @@ function updateParentChildTabs() {
 }
 
 async function loadCalendarData() {
+  parentHwCache = {};
+  renderCalendar();
   try {
     const snap = await db.collection('homework').where('child', '==', parentChild).get();
-    parentHwCache = {};
     snap.docs.forEach(d => {
       const data = d.data();
       if (!parentHwCache[data.date]) parentHwCache[data.date] = [];

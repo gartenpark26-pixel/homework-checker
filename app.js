@@ -531,7 +531,7 @@ function handlePinComplete() {
         db.collection('parentPin').doc('main').set({ pin: pinBuffer });
       } else {
         childPinsCache[pinTarget] = pinBuffer;
-        db.collection('users').doc(CHILD_IDS[pinTarget]).set({ pin: pinBuffer }, { merge: true });
+        db.collection('settings').doc('pins').set({ [CHILD_IDS[pinTarget]]: pinBuffer }, { merge: true });
       }
       cancelPin();
       pinTarget === 'parent' ? openParentView() : selectProfile(pinTarget);
@@ -550,35 +550,25 @@ function handlePinComplete() {
 async function resetChildPin(childName) {
   if (!confirm(`${childName}의 PIN을 초기화할까요?`)) return;
   try {
-    await db.collection('users').doc(CHILD_IDS[childName]).set(
-      { pin: firebase.firestore.FieldValue.delete() }, { merge: true }
+    await db.collection('settings').doc('pins').set(
+      { [CHILD_IDS[childName]]: firebase.firestore.FieldValue.delete() }, { merge: true }
     );
     childPinsCache[childName] = null;
     alert(`${childName}의 PIN이 초기화되었어요.`);
   } catch (e) { console.error(e); alert('초기화에 실패했어요.'); }
 }
 function preloadChildPins() {
-  // 아이 PIN: users/<id> 우선, 없으면 구 경로(childPins/<한글>)에서 마이그레이션
-  const childPromises = ['시현이', '시온이'].map(name =>
-    db.collection('users').doc(CHILD_IDS[name]).get()
-      .then(snap => {
-        const pin = snap.exists ? (snap.data().pin || null) : null;
-        if (pin) {
-          childPinsCache[name] = pin;
-        } else {
-          return db.collection('childPins').doc(name).get()
-            .then(old => {
-              const oldPin = old.exists ? (old.data().pin || null) : null;
-              childPinsCache[name] = oldPin;
-              if (oldPin) {
-                db.collection('users').doc(CHILD_IDS[name])
-                  .set({ pin: oldPin }, { merge: true }).catch(() => {});
-              }
-            });
-        }
-      })
-      .catch(() => { childPinsCache[name] = null; })
-  );
+  // 아이 PIN: settings/pins 문서에서 sihyeon, sion 필드로 읽기
+  const childPromise = db.collection('settings').doc('pins').get()
+    .then(snap => {
+      const data = snap.exists ? snap.data() : {};
+      childPinsCache['시현이'] = data.sihyeon || null;
+      childPinsCache['시온이'] = data.sion    || null;
+    })
+    .catch(() => {
+      childPinsCache['시현이'] = null;
+      childPinsCache['시온이'] = null;
+    });
 
   // 부모 PIN: Firestore 우선, 없으면 localStorage에서 자동 마이그레이션
   const parentPromise = db.collection('parentPin').doc('main').get()
@@ -598,7 +588,7 @@ function preloadChildPins() {
     })
     .catch(() => { parentPinCache = localStorage.getItem('hw_parent_pin'); });
 
-  Promise.all([...childPromises, parentPromise]).then(() => { pinsLoadedDone = true; pinsLoadedResolve(); });
+  Promise.all([childPromise, parentPromise]).then(() => { pinsLoadedDone = true; pinsLoadedResolve(); });
 }
 
 // ===== 부모 화면 =====

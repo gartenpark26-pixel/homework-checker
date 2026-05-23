@@ -443,6 +443,7 @@ let pinStoredVal  = null;
 const childPinsCache = {};
 let parentPinCache = null;
 const CHILD_IDS = { '시현이': 'sihyeon', '시온이': 'sion' };
+let pinsLoadedDone = false;
 let pinsLoadedResolve;
 const pinsLoaded = new Promise(r => { pinsLoadedResolve = r; });
 
@@ -450,27 +451,39 @@ async function openPinModal() {
   pinTarget = 'parent';
   pinBuffer = ''; pinSetupFirst = '';
   document.getElementById('pin-title').textContent = '🔒 부모 확인';
-  document.getElementById('pin-hint').textContent  = 'PIN 확인 중…';
-  updatePinDots();
-  document.getElementById('overlay-pin').classList.add('on');
-  document.getElementById('modal-pin').classList.add('on');
-  await Promise.race([pinsLoaded, new Promise(r => setTimeout(r, 3000))]);
+  if (!pinsLoadedDone) {
+    document.getElementById('pin-hint').textContent = 'PIN 확인 중…';
+    updatePinDots();
+    document.getElementById('overlay-pin').classList.add('on');
+    document.getElementById('modal-pin').classList.add('on');
+    await Promise.race([pinsLoaded, new Promise(r => setTimeout(r, 3000))]);
+    pinsLoadedDone = true;
+  }
   pinStoredVal = parentPinCache;
   pinMode = pinStoredVal ? 'verify' : 'setup1';
   document.getElementById('pin-hint').textContent = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
+  updatePinDots();
+  document.getElementById('overlay-pin').classList.add('on');
+  document.getElementById('modal-pin').classList.add('on');
 }
 async function openChildPinModal(childName) {
   pinTarget = childName;
   pinBuffer = ''; pinSetupFirst = '';
   document.getElementById('pin-title').textContent = `🔒 ${childName} 확인`;
-  document.getElementById('pin-hint').textContent  = 'PIN 확인 중…';
-  updatePinDots();
-  document.getElementById('overlay-pin').classList.add('on');
-  document.getElementById('modal-pin').classList.add('on');
-  await Promise.race([pinsLoaded, new Promise(r => setTimeout(r, 3000))]);
+  if (!pinsLoadedDone) {
+    document.getElementById('pin-hint').textContent = 'PIN 확인 중…';
+    updatePinDots();
+    document.getElementById('overlay-pin').classList.add('on');
+    document.getElementById('modal-pin').classList.add('on');
+    await Promise.race([pinsLoaded, new Promise(r => setTimeout(r, 3000))]);
+    pinsLoadedDone = true;
+  }
   pinStoredVal = childPinsCache[childName] ?? null;
   pinMode = pinStoredVal ? 'verify' : 'setup1';
   document.getElementById('pin-hint').textContent = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
+  updatePinDots();
+  document.getElementById('overlay-pin').classList.add('on');
+  document.getElementById('modal-pin').classList.add('on');
 }
 function cancelPin() {
   document.getElementById('overlay-pin').classList.remove('on');
@@ -585,7 +598,7 @@ function preloadChildPins() {
     })
     .catch(() => { parentPinCache = localStorage.getItem('hw_parent_pin'); });
 
-  Promise.all([...childPromises, parentPromise]).then(() => pinsLoadedResolve());
+  Promise.all([...childPromises, parentPromise]).then(() => { pinsLoadedDone = true; pinsLoadedResolve(); });
 }
 
 // ===== 부모 화면 =====

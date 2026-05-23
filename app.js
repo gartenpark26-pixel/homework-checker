@@ -412,13 +412,30 @@ async function submitTmpl() {
 let pinBuffer     = '';
 let pinMode       = 'verify';
 let pinSetupFirst = '';
+let pinTarget     = 'parent';
+let pinStoredVal  = null;
 
 function openPinModal() {
+  pinTarget = 'parent';
   pinBuffer = ''; pinSetupFirst = '';
-  const stored = localStorage.getItem('hw_parent_pin');
-  pinMode = stored ? 'verify' : 'setup1';
+  pinStoredVal = localStorage.getItem('hw_parent_pin');
+  pinMode = pinStoredVal ? 'verify' : 'setup1';
   document.getElementById('pin-title').textContent = '🔒 부모 확인';
-  document.getElementById('pin-hint').textContent  = stored ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
+  document.getElementById('pin-hint').textContent  = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
+  updatePinDots();
+  document.getElementById('overlay-pin').classList.add('on');
+  document.getElementById('modal-pin').classList.add('on');
+}
+async function openChildPinModal(childName) {
+  pinTarget = childName;
+  pinBuffer = ''; pinSetupFirst = '';
+  try {
+    const snap = await db.collection('childPins').doc(childName).get();
+    pinStoredVal = snap.exists ? snap.data().pin : null;
+  } catch (e) { pinStoredVal = null; }
+  pinMode = pinStoredVal ? 'verify' : 'setup1';
+  document.getElementById('pin-title').textContent = `🔒 ${childName} 확인`;
+  document.getElementById('pin-hint').textContent  = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
   updatePinDots();
   document.getElementById('overlay-pin').classList.add('on');
   document.getElementById('modal-pin').classList.add('on');
@@ -443,10 +460,17 @@ function updatePinDots() {
     dot.classList.toggle('filled', i < pinBuffer.length));
 }
 function handlePinComplete() {
-  const stored = localStorage.getItem('hw_parent_pin');
+  if (pinMode === 'setup1') {
+    pinSetupFirst = pinBuffer; pinBuffer = ''; pinMode = 'setup2';
+    document.getElementById('pin-hint').textContent = 'PIN을 한 번 더 입력해주세요';
+    updatePinDots();
+    return;
+  }
   if (pinMode === 'verify') {
-    if (pinBuffer === stored) { cancelPin(); openParentView(); }
-    else {
+    if (pinBuffer === pinStoredVal) {
+      cancelPin();
+      pinTarget === 'parent' ? openParentView() : selectProfile(pinTarget);
+    } else {
       document.getElementById('pin-dots').classList.add('shake');
       document.getElementById('pin-hint').textContent = '틀렸어요. 다시 입력해주세요';
       setTimeout(() => {
@@ -455,14 +479,12 @@ function handlePinComplete() {
         pinBuffer = ''; updatePinDots();
       }, 600);
     }
-  } else if (pinMode === 'setup1') {
-    pinSetupFirst = pinBuffer; pinBuffer = ''; pinMode = 'setup2';
-    document.getElementById('pin-hint').textContent = 'PIN을 한 번 더 입력해주세요';
-    updatePinDots();
-  } else {
+  } else { // setup2
     if (pinBuffer === pinSetupFirst) {
-      localStorage.setItem('hw_parent_pin', pinBuffer);
-      cancelPin(); openParentView();
+      if (pinTarget === 'parent') localStorage.setItem('hw_parent_pin', pinBuffer);
+      else db.collection('childPins').doc(pinTarget).set({ pin: pinBuffer });
+      cancelPin();
+      pinTarget === 'parent' ? openParentView() : selectProfile(pinTarget);
     } else {
       document.getElementById('pin-dots').classList.add('shake');
       document.getElementById('pin-hint').textContent = '일치하지 않아요. 처음부터 다시 입력해주세요';
@@ -475,13 +497,22 @@ function handlePinComplete() {
     }
   }
 }
+async function resetChildPin(childName) {
+  if (!confirm(`${childName}의 PIN을 초기화할까요?`)) return;
+  try {
+    await db.collection('childPins').doc(childName).delete();
+    alert(`${childName}의 PIN이 초기화되었어요.`);
+  } catch (e) { console.error(e); alert('초기화에 실패했어요.'); }
+}
 
 // ===== 부모 화면 =====
 let parentChild   = '시현이';
 let calYear       = 0;
 let calMonth      = 0;
-let parentHwCache = {};
-let unsubParent   = null;
+let parentHwCache     = {};
+let unsubParent       = null;
+let parentTmplItems   = [];
+let parentChecksCache = {};
 
 function openParentView() {
   const now = new Date();
@@ -510,7 +541,7 @@ function updateParentChildTabs() {
 
 function loadCalendarData() {
   if (unsubParent) { unsubParent(); unsubParent = null; }
-  parentHwCache = {};
+  parentHwCache = {}; parentTmplItems = []; parentChecksCache = {};
   renderCalendar();
   unsubParent = db.collection('homework').where('child', '==', parentChild)
     .onSnapshot(snap => {
@@ -522,13 +553,35 @@ function loadCalendarData() {
       });
       renderCalendar();
     }, e => console.error('캘린더 로드 실패:', e));
+  loadMonthChecks();
+}
+
+async function loadMonthChecks() {
+  const yr = calYear, mo = calMonth, child = parentChild;
+  const mm = `${yr}-${String(mo).padStart(2,'0')}`;
+  try {
+    const [tmplSnap, checksSnap] = await Promise.all([
+      db.collection('templates').doc(child).get(),
+      db.collection('dailyChecks')
+        .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
+        .where(firebase.firestore.FieldPath.documentId(), '<=', `${child}_${mm}-31`)
+        .get(),
+    ]);
+    if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
+    parentTmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
+    checksSnap.docs.forEach(d => {
+      parentChecksCache[d.id.slice(child.length + 1)] = d.data();
+    });
+  } catch (e) { console.error('월별 데이터 로드 실패:', e); }
 }
 
 function navCalendar(dir) {
   calMonth += dir;
   if (calMonth > 12) { calMonth = 1; calYear++; }
   if (calMonth < 1)  { calMonth = 12; calYear--; }
+  parentTmplItems = []; parentChecksCache = {};
   renderCalendar();
+  loadMonthChecks();
 }
 
 function renderCalendar() {
@@ -572,17 +625,15 @@ function renderCalendar() {
 }
 
 async function openDayDetail(dateStr) {
-  let hw = [], tmplChecks = {}, tmplForChild = [];
-  try {
-    const [hwSnap, checkSnap, tmplSnap] = await Promise.all([
-      db.collection('homework').where('child', '==', parentChild).where('date', '==', dateStr).get(),
-      db.collection('dailyChecks').doc(`${parentChild}_${dateStr}`).get(),
-      db.collection('templates').doc(parentChild).get(),
-    ]);
-    hw           = hwSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    tmplChecks   = checkSnap.exists ? checkSnap.data()            : {};
-    tmplForChild = tmplSnap.exists  ? (tmplSnap.data().items||[]) : [];
-  } catch (e) { console.error(e); }
+  const hw = parentHwCache[dateStr] || [];
+  const tmplForChild = parentTmplItems;
+  let tmplChecks = parentChecksCache[dateStr];
+  if (tmplChecks === undefined) {
+    try {
+      const checkSnap = await db.collection('dailyChecks').doc(`${parentChild}_${dateStr}`).get();
+      tmplChecks = checkSnap.exists ? checkSnap.data() : {};
+    } catch (e) { console.error(e); tmplChecks = {}; }
+  }
 
   const d = new Date(dateStr + 'T00:00:00');
   document.getElementById('daydetail-date').textContent =

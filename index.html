@@ -35,7 +35,7 @@
 
       <div class="profile-cards">
         <!-- 시현이 카드 (토끼) -->
-        <button class="profile-card sihyeon-card" onclick="selectProfile('시현이')">
+        <button class="profile-card sihyeon-card" onclick="openChildPinModal('시현이')">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" class="character-svg" aria-hidden="true">
             <ellipse cx="30" cy="30" rx="12" ry="27" fill="#F8C8DC"/>
             <ellipse cx="70" cy="30" rx="12" ry="27" fill="#F8C8DC"/>
@@ -52,11 +52,10 @@
             <path d="M44 89 Q50 95 56 89" stroke="#D880A8" stroke-width="2" fill="none" stroke-linecap="round"/>
           </svg>
           <span class="card-name">시현이</span>
-          <span class="card-badge sihyeon-badge">핑크팀 🌸</span>
         </button>
 
         <!-- 시온이 카드 (곰) -->
-        <button class="profile-card sion-card" onclick="selectProfile('시온이')">
+        <button class="profile-card sion-card" onclick="openChildPinModal('시온이')">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="character-svg" aria-hidden="true">
             <circle  cx="22"  cy="26"  r="18"  fill="#B0D8F0"/>
             <circle  cx="78"  cy="26"  r="18"  fill="#B0D8F0"/>
@@ -74,7 +73,6 @@
             <path d="M43 74 Q50 80 57 74" stroke="#70A8C8" stroke-width="2" fill="none" stroke-linecap="round"/>
           </svg>
           <span class="card-name">시온이</span>
-          <span class="card-badge sion-badge">블루팀 🐻</span>
         </button>
       </div>
 
@@ -196,6 +194,14 @@
       <span>🌟 = 모두 완료</span>
       <span class="cal-legend-sep">·</span>
       <span>% = 부분 완료</span>
+    </div>
+
+    <div class="pin-reset-section">
+      <p class="pin-reset-title">자녀 PIN 초기화</p>
+      <div class="pin-reset-btns">
+        <button class="pin-reset-btn" onclick="resetChildPin('시현이')">🐰 시현이 PIN 초기화</button>
+        <button class="pin-reset-btn" onclick="resetChildPin('시온이')">🐻 시온이 PIN 초기화</button>
+      </div>
     </div>
   </div>
 

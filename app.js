@@ -519,6 +519,7 @@ let parentHwCache     = {};
 let unsubParent       = null;
 let parentTmplItems   = [];
 let parentChecksCache = {};
+let monthChecksPromise = Promise.resolve();
 
 function openParentView() {
   const now = new Date();
@@ -562,23 +563,25 @@ function loadCalendarData() {
   loadMonthChecks();
 }
 
-async function loadMonthChecks() {
+function loadMonthChecks() {
   const yr = calYear, mo = calMonth, child = parentChild;
   const mm = `${yr}-${String(mo).padStart(2,'0')}`;
-  try {
-    const [tmplSnap, checksSnap] = await Promise.all([
-      db.collection('templates').doc(child).get(),
-      db.collection('dailyChecks')
-        .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
-        .where(firebase.firestore.FieldPath.documentId(), '<=', `${child}_${mm}-31`)
-        .get(),
-    ]);
-    if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
-    parentTmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
-    checksSnap.docs.forEach(d => {
-      parentChecksCache[d.id.slice(child.length + 1)] = d.data();
-    });
-  } catch (e) { console.error('월별 데이터 로드 실패:', e); }
+  monthChecksPromise = (async () => {
+    try {
+      const [tmplSnap, checksSnap] = await Promise.all([
+        db.collection('templates').doc(child).get(),
+        db.collection('dailyChecks')
+          .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
+          .where(firebase.firestore.FieldPath.documentId(), '<=', `${child}_${mm}-31`)
+          .get(),
+      ]);
+      if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
+      parentTmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
+      checksSnap.docs.forEach(d => {
+        parentChecksCache[d.id.slice(child.length + 1)] = d.data();
+      });
+    } catch (e) { console.error('월별 데이터 로드 실패:', e); }
+  })();
 }
 
 function navCalendar(dir) {
@@ -631,19 +634,21 @@ function renderCalendar() {
 }
 
 async function openDayDetail(dateStr) {
-  const hw = parentHwCache[dateStr] || [];
-  const tmplForChild = parentTmplItems;
-  let tmplChecks = parentChecksCache[dateStr];
-  if (tmplChecks === undefined) {
-    try {
-      const checkSnap = await db.collection('dailyChecks').doc(`${parentChild}_${dateStr}`).get();
-      tmplChecks = checkSnap.exists ? checkSnap.data() : {};
-    } catch (e) { console.error(e); tmplChecks = {}; }
-  }
-
+  // 즉시 팝업 오픈 + 스피너
   const d = new Date(dateStr + 'T00:00:00');
   document.getElementById('daydetail-date').textContent =
     d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+  document.getElementById('daydetail-summary').textContent = '';
+  document.getElementById('daydetail-list').innerHTML =
+    '<div class="daydetail-loading"><span class="daydetail-spinner"></span>불러오는 중…</div>';
+  document.getElementById('overlay-daydetail').classList.add('on');
+  document.getElementById('modal-daydetail').classList.add('on');
+
+  await monthChecksPromise;
+
+  const hw = parentHwCache[dateStr] || [];
+  const tmplForChild = parentTmplItems;
+  const tmplChecks = parentChecksCache[dateStr] || {};
 
   const allItems = [
     ...hw.map(h => ({
@@ -688,9 +693,6 @@ async function openDayDetail(dateStr) {
             </div>
           </div>`;
       }).join('');
-
-  document.getElementById('overlay-daydetail').classList.add('on');
-  document.getElementById('modal-daydetail').classList.add('on');
 }
 function closeDayDetail() {
   document.getElementById('overlay-daydetail').classList.remove('on');

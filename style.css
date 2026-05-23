@@ -512,6 +512,16 @@ body {
 .daydetail-item .hw-title { font-size: 1rem; }
 .daydetail-item.done .hw-title { text-decoration: line-through; color: #C8C0D8; }
 .daydetail-empty { text-align: center; color: #C0B8D0; font-size: 1rem; padding: 1rem 0; }
+.daydetail-loading {
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  padding: 2rem 1rem; color: #C0B8D0; font-size: 1rem; font-weight: 700;
+}
+.daydetail-spinner {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 3px solid #EDE8F8; border-top-color: var(--theme);
+  display: inline-block; animation: spin 0.8s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== 완료 시간 표시 ===== */
 .hw-meta {

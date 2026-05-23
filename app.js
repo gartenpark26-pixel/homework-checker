@@ -1,6 +1,7 @@
 'use strict';
 
 const db = firebase.firestore();
+db.enablePersistence().catch(() => {});
 
 // ===== 상태 =====
 let profile        = null;
@@ -207,6 +208,13 @@ async function toggleTemplateCheck(id, current) {
   } catch (e) { console.error(e); }
 }
 
+function hideTmplForDay(id) {
+  if (!confirm('오늘만 이 항목을 숨길까요? 내일부터 다시 표시돼요.')) return;
+  db.collection('dailyChecks').doc(`${profile}_${viewDate}`)
+    .set({ [`hidden_${id}`]: true }, { merge: true })
+    .catch(e => console.error(e));
+}
+
 // ===== 렌더링 =====
 function renderStars(id, stars, itemType, disabled) {
   const btns = [1,2,3].map(n =>
@@ -223,13 +231,15 @@ function renderStars(id, stars, itemType, disabled) {
 function render() {
   const merged = [
     ...hwData.map(h => ({ ...h, itemType: 'manual' })),
-    ...templateItems.map(t => ({
-      id: t.id, itemType: 'template',
-      subject: t.subject, title: t.title,
-      completed:        templateChecks[t.id] || false,
-      completedTimeStr: templateChecks[`${t.id}_time`] || null,
-      stars:            templateChecks[`${t.id}_stars`] || null,
-    })),
+    ...templateItems
+      .filter(t => !templateChecks[`hidden_${t.id}`])
+      .map(t => ({
+        id: t.id, itemType: 'template',
+        subject: t.subject, title: t.title,
+        completed:        templateChecks[t.id] || false,
+        completedTimeStr: templateChecks[`${t.id}_time`] || null,
+        stars:            templateChecks[`${t.id}_stars`] || null,
+      })),
   ];
 
   const total   = merged.length;
@@ -267,7 +277,7 @@ function render() {
       : `toggleDone('${h.id}', ${h.completed})`;
     const rightEl = h.itemType === 'manual'
       ? `<button class="del-btn" onclick="deleteHw('${h.id}')" aria-label="삭제">🗑️</button>`
-      : `<span class="repeat-badge" title="반복 숙제">🔁</span>`;
+      : `<button class="del-btn" onclick="hideTmplForDay('${h.id}')" aria-label="오늘 숨기기" title="오늘만 숨기기">🗑️</button>`;
 
     const timeStr = h.itemType === 'manual'
       ? formatTime(h.completedAt)
@@ -283,7 +293,7 @@ function render() {
           ${h.completed ? '✓' : ''}
         </button>
         <div class="hw-body">
-          <div class="hw-subj">${SUBJ_EMOJI[h.subject]||''} ${esc(h.subject)}</div>
+          <div class="hw-subj">${SUBJ_EMOJI[h.subject]||''} ${esc(h.subject)}${h.itemType==='template'?' <span class="repeat-badge">🔁</span>':''}</div>
           <div class="hw-title">${esc(h.title)}</div>
           ${timeLine}
         </div>
@@ -390,22 +400,17 @@ function pickTmplSubj(btn) {
   document.querySelectorAll('.tmpl-subj-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
-async function submitTmpl() {
+function submitTmpl() {
   const input = document.getElementById('tmpl-input');
   const title = input.value.trim();
   if (!title) {
     input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
     input.focus(); return;
   }
-  const btn = document.getElementById('btn-add-tmpl');
-  btn.disabled = true; btn.textContent = '추가 중…';
-  try {
-    await db.collection('templates').doc(profile).set({ items: [...templateItems, { id: genId(), subject: tmplSubj, title }] });
-    closeTmplModal();
-  } catch (e) {
-    console.error(e); alert('추가에 실패했어요.');
-    btn.disabled = false; btn.textContent = '추가하기';
-  }
+  closeTmplModal();
+  db.collection('templates').doc(profile)
+    .set({ items: [...templateItems, { id: genId(), subject: tmplSubj, title }] })
+    .catch(e => { console.error(e); alert('반복 숙제 추가에 실패했어요.'); });
 }
 
 // ===== PIN =====

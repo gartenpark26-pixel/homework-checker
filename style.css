@@ -454,6 +454,29 @@ body {
 }
 .cal-legend-sep { color: #DDD; }
 
+/* 주말 포함/제외 토글 — 모달 추가 시 */
+.tmpl-weekend-toggle {
+  width: 100%; padding: 0.75rem; margin-bottom: 0.3rem;
+  border: 2px solid #EDE8F8; border-radius: var(--radius-s);
+  background: white; font-size: 1rem; font-weight: 700;
+  color: #888; cursor: pointer; font-family: var(--font);
+  transition: all 0.18s ease;
+}
+.tmpl-weekend-toggle.skip {
+  background: #FFF5E8; border-color: #FFBB55; color: #C07000;
+}
+
+/* 주말 포함/제외 토글 — 템플릿 목록 */
+.tmpl-weekend-btn {
+  background: none; border: 1.5px solid #DDD8EE; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 700; color: #AAA;
+  padding: 0.2rem 0.55rem; cursor: pointer; flex-shrink: 0;
+  transition: all 0.18s ease; font-family: var(--font);
+}
+.tmpl-weekend-btn.skip {
+  border-color: #FFBB55; color: #C07000; background: #FFF5E8;
+}
+
 /* 자녀 PIN 초기화 */
 .pin-reset-section { margin: 1.2rem 1rem 0; }
 .pin-reset-title   { font-size: 0.85rem; font-weight: 900; color: #C0B0D8; text-align: center; margin-bottom: 0.6rem; }

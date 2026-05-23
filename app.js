@@ -154,13 +154,15 @@ async function toggleDone(id, current) {
     if (!current) {
       await db.collection('homework').doc(id).update({
         completed: true,
-        completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        completedAt:     firebase.firestore.FieldValue.serverTimestamp(),
+        completedTimeStr: nowTimeStr(),
       });
     } else {
       await db.collection('homework').doc(id).update({
         completed: false,
-        completedAt: firebase.firestore.FieldValue.delete(),
-        stars:       firebase.firestore.FieldValue.delete(),
+        completedAt:      firebase.firestore.FieldValue.delete(),
+        completedTimeStr: firebase.firestore.FieldValue.delete(),
+        stars:            firebase.firestore.FieldValue.delete(),
       });
     }
   } catch (e) { console.error(e); }
@@ -229,10 +231,12 @@ function renderStars(id, stars, itemType, disabled) {
 }
 
 function render() {
+  const viewDow = new Date(viewDate + 'T00:00:00').getDay();
+  const isWeekend = viewDow === 0 || viewDow === 6;
   const merged = [
     ...hwData.map(h => ({ ...h, itemType: 'manual' })),
     ...templateItems
-      .filter(t => !templateChecks[`hidden_${t.id}`])
+      .filter(t => !templateChecks[`hidden_${t.id}`] && !(isWeekend && t.weekendSkip))
       .map(t => ({
         id: t.id, itemType: 'template',
         subject: t.subject, title: t.title,
@@ -279,9 +283,7 @@ function render() {
       ? `<button class="del-btn" onclick="deleteHw('${h.id}')" aria-label="삭제">🗑️</button>`
       : `<button class="del-btn" onclick="hideTmplForDay('${h.id}')" aria-label="오늘 숨기기" title="오늘만 숨기기">🗑️</button>`;
 
-    const timeStr = h.itemType === 'manual'
-      ? formatTime(h.completedAt)
-      : (h.completedTimeStr || '');
+    const timeStr = h.completedTimeStr || (h.itemType === 'manual' ? formatTime(h.completedAt) : '');
     const timeLine = h.completed && timeStr
       ? `<div class="hw-meta">${timeStr} 완료 ✓</div>`
       : '';
@@ -348,6 +350,7 @@ function submitHw() {
 
 // ===== 템플릿 화면 =====
 let tmplSubj = '수학';
+let tmplWeekendSkip = false;
 function openTemplate() {
   document.getElementById('screen-main').classList.add('hidden');
   document.getElementById('screen-template').classList.remove('hidden');
@@ -369,8 +372,17 @@ function renderTemplate() {
         <div class="hw-subj">${SUBJ_EMOJI[t.subject]||''} ${esc(t.subject)}</div>
         <div class="hw-title">${esc(t.title)}</div>
       </div>
+      <button class="tmpl-weekend-btn${t.weekendSkip ? ' skip' : ''}" onclick="toggleWeekendSkip('${t.id}')" title="${t.weekendSkip ? '평일만 표시 중' : '매일 표시 중'}">${t.weekendSkip ? '평일만' : '매일'}</button>
       <button class="del-btn" onclick="deleteTmplItem('${t.id}')" aria-label="삭제">🗑️</button>
     </div>`).join('');
+}
+function toggleWeekendSkip(id) {
+  const updated = templateItems.map(t =>
+    t.id === id ? { ...t, weekendSkip: !t.weekendSkip } : t
+  );
+  db.collection('templates').doc(profile)
+    .set({ items: updated })
+    .catch(e => console.error(e));
 }
 async function deleteTmplItem(id) {
   if (!confirm('이 반복 숙제를 삭제할까요? 🗑️')) return;
@@ -383,13 +395,22 @@ function openTmplModal() {
   document.getElementById('tmpl-input').value = '';
   document.getElementById('tmpl-input').classList.remove('shake');
   tmplSubj = '수학';
+  tmplWeekendSkip = false;
   document.querySelectorAll('.tmpl-subj-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.tmpl-subj-btn[data-s="수학"]').classList.add('active');
+  const wBtn = document.getElementById('btn-weekend-toggle');
+  wBtn.classList.remove('skip'); wBtn.textContent = '주말 포함';
   document.getElementById('btn-add-tmpl').disabled    = false;
   document.getElementById('btn-add-tmpl').textContent = '추가하기';
   document.getElementById('overlay-tmpl').classList.add('on');
   document.getElementById('modal-tmpl').classList.add('on');
   setTimeout(() => document.getElementById('tmpl-input').focus(), 380);
+}
+function toggleTmplWeekend() {
+  tmplWeekendSkip = !tmplWeekendSkip;
+  const btn = document.getElementById('btn-weekend-toggle');
+  btn.classList.toggle('skip', tmplWeekendSkip);
+  btn.textContent = tmplWeekendSkip ? '평일만' : '주말 포함';
 }
 function closeTmplModal() {
   document.getElementById('overlay-tmpl').classList.remove('on');
@@ -409,7 +430,7 @@ function submitTmpl() {
   }
   closeTmplModal();
   db.collection('templates').doc(profile)
-    .set({ items: [...templateItems, { id: genId(), subject: tmplSubj, title }] })
+    .set({ items: [...templateItems, { id: genId(), subject: tmplSubj, title, weekendSkip: tmplWeekendSkip }] })
     .catch(e => { console.error(e); alert('반복 숙제 추가에 실패했어요.'); });
 }
 
@@ -520,10 +541,11 @@ function preloadChildPins() {
 let parentChild   = '시현이';
 let calYear       = 0;
 let calMonth      = 0;
-let parentHwCache     = {};
-let unsubParent       = null;
-let parentTmplItems   = [];
-let parentChecksCache = {};
+let parentHwCache      = {};
+let unsubParent        = null;
+let unsubChecksParent  = null;
+let parentTmplItems    = [];
+let parentChecksCache  = {};
 let monthChecksPromise = Promise.resolve();
 
 function openParentView() {
@@ -536,7 +558,8 @@ function openParentView() {
   loadCalendarData();
 }
 function closeParentView() {
-  if (unsubParent) { unsubParent(); unsubParent = null; }
+  if (unsubParent)       { unsubParent();       unsubParent       = null; }
+  if (unsubChecksParent) { unsubChecksParent(); unsubChecksParent = null; }
   document.getElementById('screen-parent').classList.add('hidden');
   document.getElementById('screen-profile').classList.remove('hidden');
 }
@@ -552,7 +575,8 @@ function updateParentChildTabs() {
 }
 
 function loadCalendarData() {
-  if (unsubParent) { unsubParent(); unsubParent = null; }
+  if (unsubParent)       { unsubParent();       unsubParent       = null; }
+  if (unsubChecksParent) { unsubChecksParent(); unsubChecksParent = null; }
   parentHwCache = {}; parentTmplItems = []; parentChecksCache = {};
   renderCalendar();
   unsubParent = db.collection('homework').where('child', '==', parentChild)
@@ -563,37 +587,38 @@ function loadCalendarData() {
         if (!parentHwCache[data.date]) parentHwCache[data.date] = [];
         parentHwCache[data.date].push({ id: d.id, ...data });
       });
-      console.log('[DBG] homework onSnapshot:', snap.docs.length, '건, 날짜키:', Object.keys(parentHwCache).sort().slice(-5));
       renderCalendar();
     }, e => console.error('캘린더 로드 실패:', e));
   loadMonthChecks();
 }
 
 function loadMonthChecks() {
+  if (unsubChecksParent) { unsubChecksParent(); unsubChecksParent = null; }
   const yr = calYear, mo = calMonth, child = parentChild;
   const mm = `${yr}-${String(mo).padStart(2,'0')}`;
-  console.log('[DBG] loadMonthChecks 쿼리 범위:', `${child}_${mm}-01 ~ ${child}_${mm}-31`);
-  monthChecksPromise = (async () => {
-    try {
-      const [tmplSnap, checksSnap] = await Promise.all([
-        db.collection('templates').doc(child).get(),
-        db.collection('dailyChecks')
-          .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
-          .where(firebase.firestore.FieldPath.documentId(), '<=', `${child}_${mm}-31`)
-          .get(),
-      ]);
-      console.log('[DBG] dailyChecks 결과:', checksSnap.docs.length, '개 → IDs:', checksSnap.docs.map(d => d.id));
-      console.log('[DBG] templates 항목수:', tmplSnap.exists ? (tmplSnap.data().items || []).length : 0);
-      if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
+  const nextMo = mo === 12 ? 1 : mo + 1;
+  const nextYr = mo === 12 ? yr + 1 : yr;
+  const nextMm = `${nextYr}-${String(nextMo).padStart(2,'0')}`;
+
+  let resolved = false;
+  monthChecksPromise = new Promise(resolve => {
+    db.collection('templates').doc(child).get().then(tmplSnap => {
+      if (calYear !== yr || calMonth !== mo || parentChild !== child) { if (!resolved) { resolved = true; resolve(); } return; }
       parentTmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
-      checksSnap.docs.forEach(d => {
-        parentChecksCache[d.id.slice(child.length + 1)] = d.data();
-      });
-      console.log('[DBG] parentChecksCache 키:', Object.keys(parentChecksCache));
-      // ← [BUG 1] 여기서 renderCalendar() 호출이 없었음 → 캐시가 채워져도 달력이 갱신 안 됨
-      renderCalendar();
-    } catch (e) { console.error('월별 데이터 로드 실패:', e); }
-  })();
+      unsubChecksParent = db.collection('dailyChecks')
+        .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
+        .where(firebase.firestore.FieldPath.documentId(), '<',  `${child}_${nextMm}-01`)
+        .onSnapshot(checksSnap => {
+          if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
+          parentChecksCache = {};
+          checksSnap.docs.forEach(d => {
+            parentChecksCache[d.id.slice(child.length + 1)] = d.data();
+          });
+          if (!resolved) { resolved = true; resolve(); }
+          renderCalendar();
+        }, e => { console.error('dailyChecks 로드 실패:', e); if (!resolved) { resolved = true; resolve(); } });
+    }).catch(e => { console.error('템플릿 로드 실패:', e); if (!resolved) { resolved = true; resolve(); } });
+  });
 }
 
 function navCalendar(dir) {
@@ -664,7 +689,6 @@ async function openDayDetail(dateStr) {
 
   // 최대 3초 대기 후 부분 데이터라도 표시
   await Promise.race([monthChecksPromise, new Promise(r => setTimeout(r, 3000))]);
-  console.log('[DBG] openDayDetail', dateStr, '| hw:', (parentHwCache[dateStr]||[]).length, '| tmpl:', parentTmplItems.length, '| checks:', !!parentChecksCache[dateStr]);
 
   const hw = parentHwCache[dateStr] || [];
   const tmplForChild = parentTmplItems;
@@ -673,7 +697,7 @@ async function openDayDetail(dateStr) {
   const allItems = [
     ...hw.map(h => ({
       title: h.title, subject: h.subject, completed: h.completed, type: 'manual',
-      completedAt: h.completedAt, stars: h.stars || null,
+      completedAt: h.completedAt, completedTimeStr: h.completedTimeStr || null, stars: h.stars || null,
     })),
     ...tmplForChild.map(t => ({
       title: t.title, subject: t.subject,
@@ -693,9 +717,7 @@ async function openDayDetail(dateStr) {
   document.getElementById('daydetail-list').innerHTML = allItems.length === 0
     ? '<p class="daydetail-empty">기록이 없어요</p>'
     : allItems.map(item => {
-        const timeStr = item.type === 'manual'
-          ? formatTime(item.completedAt)
-          : (item.completedTimeStr || '');
+        const timeStr = item.completedTimeStr || (item.type === 'manual' ? formatTime(item.completedAt) : '');
         const timeLine = item.completed && timeStr
           ? `<div class="hw-meta">${timeStr} 완료 ✓</div>`
           : '';

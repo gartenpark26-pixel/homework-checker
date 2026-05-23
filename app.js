@@ -208,16 +208,16 @@ async function toggleTemplateCheck(id, current) {
 }
 
 // ===== 렌더링 =====
-function renderStars(id, stars, itemType) {
+function renderStars(id, stars, itemType, disabled) {
   const btns = [1,2,3].map(n =>
     `<button class="star-btn${(stars||0) >= n ? ' on' : ''}"
-             onclick="setStars('${id}',${n},'${itemType}')"
+             ${disabled ? '' : `onclick="setStars('${id}',${n},'${itemType}')"`}
              aria-label="별 ${n}개">★</button>`
   ).join('');
   const feedback = stars
     ? `<span class="star-feedback">${STAR_FEEDBACK[stars]}</span>`
     : `<span class="star-hint">평가해보세요</span>`;
-  return `<div class="hw-stars">${btns}${feedback}</div>`;
+  return `<div class="hw-stars${disabled ? ' disabled' : ''}">${btns}${feedback}</div>`;
 }
 
 function render() {
@@ -275,7 +275,7 @@ function render() {
     const timeLine = h.completed && timeStr
       ? `<div class="hw-meta">${timeStr} 완료 ✓</div>`
       : '';
-    const starLine = h.completed ? renderStars(h.id, h.stars, h.itemType) : '';
+    const starLine = renderStars(h.id, h.stars, h.itemType, !h.completed);
 
     return `
       <div class="hw-item ${h.completed ? 'done' : ''}" id="hw-${h.id}">
@@ -315,6 +315,8 @@ function openModal() {
   setTimeout(() => document.getElementById('hw-input').focus(), 380);
 }
 function closeModal() {
+  const btn = document.getElementById('btn-add');
+  btn.disabled = false; btn.textContent = '추가하기';
   document.getElementById('overlay').classList.remove('on');
   document.getElementById('modal').classList.remove('on');
 }

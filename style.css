@@ -509,6 +509,7 @@ body {
   margin-top: 0.4rem;
 }
 /* 비활성: 체크 전 */
+.hw-stars.disabled { pointer-events: none; }
 .hw-stars.disabled .star-btn { color: #EAE4F4; cursor: default; }
 .hw-stars.disabled .star-hint { color: #DDD; }
 

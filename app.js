@@ -441,11 +441,12 @@ let pinSetupFirst = '';
 let pinTarget     = 'parent';
 let pinStoredVal  = null;
 const childPinsCache = {};
+let parentPinCache = null;
 
 function openPinModal() {
   pinTarget = 'parent';
   pinBuffer = ''; pinSetupFirst = '';
-  pinStoredVal = localStorage.getItem('hw_parent_pin');
+  pinStoredVal = parentPinCache;
   pinMode = pinStoredVal ? 'verify' : 'setup1';
   document.getElementById('pin-title').textContent = '🔒 부모 확인';
   document.getElementById('pin-hint').textContent  = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
@@ -505,8 +506,13 @@ function handlePinComplete() {
     }
   } else { // setup2
     if (pinBuffer === pinSetupFirst) {
-      if (pinTarget === 'parent') localStorage.setItem('hw_parent_pin', pinBuffer);
-      else { childPinsCache[pinTarget] = pinBuffer; db.collection('childPins').doc(pinTarget).set({ pin: pinBuffer }); }
+      if (pinTarget === 'parent') {
+        parentPinCache = pinBuffer;
+        db.collection('parentPin').doc('main').set({ pin: pinBuffer });
+      } else {
+        childPinsCache[pinTarget] = pinBuffer;
+        db.collection('childPins').doc(pinTarget).set({ pin: pinBuffer });
+      }
       cancelPin();
       pinTarget === 'parent' ? openParentView() : selectProfile(pinTarget);
     } else {
@@ -535,6 +541,23 @@ function preloadChildPins() {
       .then(snap => { childPinsCache[name] = snap.exists ? snap.data().pin : null; })
       .catch(() => { childPinsCache[name] = null; });
   });
+  // 부모 PIN: Firestore 우선, 없으면 localStorage에서 자동 마이그레이션
+  db.collection('parentPin').doc('main').get()
+    .then(snap => {
+      if (snap.exists) {
+        parentPinCache = snap.data().pin;
+        localStorage.removeItem('hw_parent_pin');
+      } else {
+        const local = localStorage.getItem('hw_parent_pin');
+        if (local) {
+          parentPinCache = local;
+          db.collection('parentPin').doc('main').set({ pin: local })
+            .then(() => localStorage.removeItem('hw_parent_pin'))
+            .catch(() => {});
+        }
+      }
+    })
+    .catch(() => { parentPinCache = localStorage.getItem('hw_parent_pin'); });
 }
 
 // ===== 부모 화면 =====

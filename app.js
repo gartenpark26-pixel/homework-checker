@@ -670,14 +670,16 @@ function renderCalendar() {
     const ds       = `${y}-${String(m).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
     const hw       = parentHwCache[ds] || [];
     const checks   = parentChecksCache[ds] || {};
-    // [BUG 2 수정] 반복숙제 완료 수 포함
-    const tmplDone = parentTmplItems.filter(t => checks[t.id] === true).length;
-    const tot      = hw.length + parentTmplItems.length;
+    const calDow   = new Date(ds + 'T00:00:00').getDay();
+    const calIsWe  = calDow === 0 || calDow === 6;
+    const tmplVisible = parentTmplItems.filter(t => !(calIsWe && t.weekendSkip));
+    const tmplDone = tmplVisible.filter(t => checks[t.id] === true).length;
+    const tot      = hw.length + tmplVisible.length;
     const don      = hw.filter(h => h.completed).length + tmplDone;
     const isFuture = ds > today;
     const avg      = avgStars([
       ...hw,
-      ...parentTmplItems.map(t => ({ stars: checks[`${t.id}_stars`] || null })),
+      ...tmplVisible.map(t => ({ stars: checks[`${t.id}_stars`] || null })),
     ]);
 
     let doneBadge = '';
@@ -714,7 +716,9 @@ async function openDayDetail(dateStr) {
   await Promise.race([monthChecksPromise, new Promise(r => setTimeout(r, 3000))]);
 
   const hw = parentHwCache[dateStr] || [];
-  const tmplForChild = parentTmplItems;
+  const detailDow = new Date(dateStr + 'T00:00:00').getDay();
+  const detailIsWeekend = detailDow === 0 || detailDow === 6;
+  const tmplForChild = parentTmplItems.filter(t => !(detailIsWeekend && t.weekendSkip));
   const tmplChecks = parentChecksCache[dateStr] || {};
 
   const allItems = [

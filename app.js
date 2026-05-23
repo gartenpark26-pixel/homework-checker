@@ -414,6 +414,7 @@ let pinMode       = 'verify';
 let pinSetupFirst = '';
 let pinTarget     = 'parent';
 let pinStoredVal  = null;
+const childPinsCache = {};
 
 function openPinModal() {
   pinTarget = 'parent';
@@ -426,13 +427,10 @@ function openPinModal() {
   document.getElementById('overlay-pin').classList.add('on');
   document.getElementById('modal-pin').classList.add('on');
 }
-async function openChildPinModal(childName) {
+function openChildPinModal(childName) {
   pinTarget = childName;
   pinBuffer = ''; pinSetupFirst = '';
-  try {
-    const snap = await db.collection('childPins').doc(childName).get();
-    pinStoredVal = snap.exists ? snap.data().pin : null;
-  } catch (e) { pinStoredVal = null; }
+  pinStoredVal = childPinsCache[childName] ?? null;
   pinMode = pinStoredVal ? 'verify' : 'setup1';
   document.getElementById('pin-title').textContent = `🔒 ${childName} 확인`;
   document.getElementById('pin-hint').textContent  = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
@@ -482,7 +480,7 @@ function handlePinComplete() {
   } else { // setup2
     if (pinBuffer === pinSetupFirst) {
       if (pinTarget === 'parent') localStorage.setItem('hw_parent_pin', pinBuffer);
-      else db.collection('childPins').doc(pinTarget).set({ pin: pinBuffer });
+      else { childPinsCache[pinTarget] = pinBuffer; db.collection('childPins').doc(pinTarget).set({ pin: pinBuffer }); }
       cancelPin();
       pinTarget === 'parent' ? openParentView() : selectProfile(pinTarget);
     } else {
@@ -501,8 +499,16 @@ async function resetChildPin(childName) {
   if (!confirm(`${childName}의 PIN을 초기화할까요?`)) return;
   try {
     await db.collection('childPins').doc(childName).delete();
+    childPinsCache[childName] = null;
     alert(`${childName}의 PIN이 초기화되었어요.`);
   } catch (e) { console.error(e); alert('초기화에 실패했어요.'); }
+}
+function preloadChildPins() {
+  ['시현이', '시온이'].forEach(name => {
+    db.collection('childPins').doc(name).get()
+      .then(snap => { childPinsCache[name] = snap.exists ? snap.data().pin : null; })
+      .catch(() => { childPinsCache[name] = null; });
+  });
 }
 
 // ===== 부모 화면 =====
@@ -695,3 +701,5 @@ function closeDayDetail() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
+
+preloadChildPins();

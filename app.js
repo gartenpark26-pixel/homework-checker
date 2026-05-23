@@ -449,26 +449,28 @@ const pinsLoaded = new Promise(r => { pinsLoadedResolve = r; });
 async function openPinModal() {
   pinTarget = 'parent';
   pinBuffer = ''; pinSetupFirst = '';
-  await pinsLoaded;
-  pinStoredVal = parentPinCache;
-  pinMode = pinStoredVal ? 'verify' : 'setup1';
   document.getElementById('pin-title').textContent = '🔒 부모 확인';
-  document.getElementById('pin-hint').textContent  = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
+  document.getElementById('pin-hint').textContent  = 'PIN 확인 중…';
   updatePinDots();
   document.getElementById('overlay-pin').classList.add('on');
   document.getElementById('modal-pin').classList.add('on');
+  await Promise.race([pinsLoaded, new Promise(r => setTimeout(r, 3000))]);
+  pinStoredVal = parentPinCache;
+  pinMode = pinStoredVal ? 'verify' : 'setup1';
+  document.getElementById('pin-hint').textContent = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
 }
 async function openChildPinModal(childName) {
   pinTarget = childName;
   pinBuffer = ''; pinSetupFirst = '';
-  await pinsLoaded;
-  pinStoredVal = childPinsCache[childName] ?? null;
-  pinMode = pinStoredVal ? 'verify' : 'setup1';
   document.getElementById('pin-title').textContent = `🔒 ${childName} 확인`;
-  document.getElementById('pin-hint').textContent  = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
+  document.getElementById('pin-hint').textContent  = 'PIN 확인 중…';
   updatePinDots();
   document.getElementById('overlay-pin').classList.add('on');
   document.getElementById('modal-pin').classList.add('on');
+  await Promise.race([pinsLoaded, new Promise(r => setTimeout(r, 3000))]);
+  pinStoredVal = childPinsCache[childName] ?? null;
+  pinMode = pinStoredVal ? 'verify' : 'setup1';
+  document.getElementById('pin-hint').textContent = pinStoredVal ? 'PIN 번호를 입력해주세요' : '새 PIN을 설정해주세요 (4자리)';
 }
 function cancelPin() {
   document.getElementById('overlay-pin').classList.remove('on');

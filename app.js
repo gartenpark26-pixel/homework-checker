@@ -15,6 +15,13 @@ let unsubFn        = null;
 let unsubTemplate  = null;
 let unsubChecks    = null;
 
+// ===== 포인트 상태 =====
+let pointsData   = { total: 0, history: [] };
+let unsubPoints  = null;
+let parentPointsData = { '시현이': { total: 0, history: [] }, '시온이': { total: 0, history: [] } };
+let unsubParentPointsSihyeon = null;
+let unsubParentPointsSion    = null;
+
 // ===== 테마 =====
 const THEMES = {
   '시현이': {
@@ -78,6 +85,105 @@ function avgStars(items) {
   return avg % 1 === 0 ? avg : parseFloat(avg.toFixed(1));
 }
 
+// ===== 포인트 =====
+function loadPoints() {
+  if (unsubPoints) { unsubPoints(); unsubPoints = null; }
+  const childId = CHILD_IDS[profile];
+  unsubPoints = db.collection('points').doc(childId)
+    .onSnapshot(snap => {
+      pointsData = snap.exists
+        ? { total: snap.data().total || 0, history: snap.data().history || [] }
+        : { total: 0, history: [] };
+      renderPoints();
+    }, e => console.error('포인트 로드 실패:', e));
+}
+
+function renderPoints() {
+  const el = document.getElementById('points-banner');
+  if (!el) return;
+  el.textContent = `⭐ ${pointsData.total}포인트`;
+}
+
+async function checkAndAwardPoints() {
+  if (!profile || viewDate !== todayKey()) return;
+  const now    = new Date();
+  const cutoff = new Date(); cutoff.setHours(21, 30, 0, 0);
+  if (now > cutoff) return;
+  if (pointsData.history.some(h => h.date === todayKey())) return;
+  const childId = CHILD_IDS[profile];
+  try {
+    await db.collection('points').doc(childId).set({
+      total:   firebase.firestore.FieldValue.increment(1),
+      history: firebase.firestore.FieldValue.arrayUnion({ date: todayKey(), earnedAt: nowTimeStr() }),
+    }, { merge: true });
+  } catch (e) { console.error('포인트 적립 실패:', e); }
+}
+
+function loadParentPoints() {
+  if (unsubParentPointsSihyeon) { unsubParentPointsSihyeon(); unsubParentPointsSihyeon = null; }
+  if (unsubParentPointsSion)    { unsubParentPointsSion();    unsubParentPointsSion    = null; }
+  ['시현이', '시온이'].forEach(name => {
+    const childId = CHILD_IDS[name];
+    const unsub = db.collection('points').doc(childId)
+      .onSnapshot(snap => {
+        parentPointsData[name] = snap.exists
+          ? { total: snap.data().total || 0, history: snap.data().history || [] }
+          : { total: 0, history: [] };
+        renderParentPoints();
+      }, e => console.error(`포인트 로드 실패(${name}):`, e));
+    if (name === '시현이') unsubParentPointsSihyeon = unsub;
+    else                   unsubParentPointsSion    = unsub;
+  });
+}
+
+function renderParentPoints() {
+  const sihEl = document.getElementById('parent-pts-sihyeon');
+  const sionEl = document.getElementById('parent-pts-sion');
+  if (sihEl) sihEl.textContent = `${parentPointsData['시현이'].total}포인트`;
+  if (sionEl) sionEl.textContent = `${parentPointsData['시온이'].total}포인트`;
+
+  const histEl  = document.getElementById('parent-pts-history');
+  const labelEl = document.getElementById('pts-history-label');
+  if (!histEl) return;
+
+  const emoji = parentChild === '시현이' ? '🐰' : '🐻';
+  if (labelEl) labelEl.textContent = `${emoji} ${parentChild} 최근 7일 내역`;
+
+  const data = parentPointsData[parentChild];
+  const rows = [];
+  for (let i = 6; i >= 0; i--) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = dateKey(d);
+    const entry  = data.history.find(h => h.date === ds);
+    const label  = d.toLocaleDateString('ko-KR', { month:'numeric', day:'numeric', weekday:'short' });
+    const isPast = ds < todayKey();
+    if (entry) {
+      rows.push(`<div class="pts-hist-row earned">
+        <span class="pts-hist-date">${label}</span>
+        <span class="pts-hist-badge">⭐ +1포인트</span>
+        <span class="pts-hist-time">${entry.earnedAt}</span>
+      </div>`);
+    } else {
+      rows.push(`<div class="pts-hist-row ${isPast ? 'missed' : 'today-future'}">
+        <span class="pts-hist-date">${label}</span>
+        <span class="pts-hist-badge">${isPast ? '미적립' : '진행 중'}</span>
+        <span class="pts-hist-time"></span>
+      </div>`);
+    }
+  }
+  histEl.innerHTML = rows.join('');
+}
+
+async function adjustPoints(childName, delta) {
+  const childId = CHILD_IDS[childName];
+  if (delta < 0 && (parentPointsData[childName]?.total || 0) <= 0) return;
+  try {
+    await db.collection('points').doc(childId).set({
+      total: firebase.firestore.FieldValue.increment(delta),
+    }, { merge: true });
+  } catch (e) { console.error('포인트 조정 실패:', e); }
+}
+
 // ===== 프로필 선택 =====
 function selectProfile(name) {
   profile  = name;
@@ -93,13 +199,15 @@ function selectProfile(name) {
   document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
   document.querySelector('.filter-chip[data-subj="전체"]').classList.add('active');
   startAllListening();
+  loadPoints();
 }
 
 function goBack() {
   if (unsubFn)       { unsubFn();       unsubFn = null; }
   if (unsubTemplate) { unsubTemplate(); unsubTemplate = null; }
   if (unsubChecks)   { unsubChecks();   unsubChecks = null; }
-  profile = null; hwData = []; templateItems = []; templateChecks = {};
+  if (unsubPoints)   { unsubPoints();   unsubPoints = null; }
+  profile = null; hwData = []; templateItems = []; templateChecks = {}; pointsData = { total: 0, history: [] };
   document.body.style.background = '';
   document.getElementById('screen-main').classList.add('hidden');
   document.getElementById('screen-template').classList.add('hidden');
@@ -172,6 +280,28 @@ async function deleteHw(id) {
   if (!confirm('이 숙제를 삭제할까요? 🗑️')) return;
   try { await db.collection('homework').doc(id).delete(); }
   catch (e) { console.error(e); }
+}
+
+async function deleteDayDetailHw(id, dateStr) {
+  if (!confirm('정말 삭제할까요? 🗑️')) return;
+  try {
+    await db.collection('homework').doc(id).delete();
+    if (parentHwCache[dateStr]) {
+      parentHwCache[dateStr] = parentHwCache[dateStr].filter(h => h.id !== id);
+    }
+    openDayDetail(dateStr);
+  } catch (e) { console.error(e); alert('삭제에 실패했어요.'); }
+}
+
+async function hideTmplForDayParent(id, dateStr) {
+  if (!confirm('이 반복 숙제를 오늘만 숨길까요? 🗑️')) return;
+  try {
+    await db.collection('dailyChecks').doc(`${parentChild}_${dateStr}`)
+      .set({ [`hidden_${id}`]: true }, { merge: true });
+    if (!parentChecksCache[dateStr]) parentChecksCache[dateStr] = {};
+    parentChecksCache[dateStr][`hidden_${id}`] = true;
+    openDayDetail(dateStr);
+  } catch (e) { console.error(e); alert('처리에 실패했어요.'); }
 }
 
 async function addHw(title, subject) {
@@ -264,6 +394,7 @@ function render() {
   const emptyText = document.getElementById('empty-text');
 
   allDoneEl.classList.toggle('hidden', !(done === total && total > 0));
+  if (done === total && total > 0 && viewDate === todayKey()) checkAndAwardPoints();
 
   if (visible.length === 0) {
     listEl.innerHTML = '';
@@ -279,9 +410,7 @@ function render() {
     const onCheck = h.itemType === 'template'
       ? `toggleTemplateCheck('${h.id}', ${h.completed})`
       : `toggleDone('${h.id}', ${h.completed})`;
-    const rightEl = h.itemType === 'manual'
-      ? `<button class="del-btn" onclick="deleteHw('${h.id}')" aria-label="삭제">🗑️</button>`
-      : `<button class="del-btn" onclick="hideTmplForDay('${h.id}')" aria-label="오늘 숨기기" title="오늘만 숨기기">🗑️</button>`;
+    const rightEl = '';
 
     const timeStr = h.completedTimeStr || (h.itemType === 'manual' ? formatTime(h.completedAt) : '');
     const timeLine = h.completed && timeStr
@@ -295,7 +424,7 @@ function render() {
           ${h.completed ? '✓' : ''}
         </button>
         <div class="hw-body">
-          <div class="hw-subj">${SUBJ_EMOJI[h.subject]||''} ${esc(h.subject)}${h.itemType==='template'?' <span class="repeat-badge">🔁</span>':''}</div>
+          <div class="hw-subj">${SUBJ_EMOJI[h.subject]||''} ${esc(h.subject)}${h.itemType==='template'?' <span class="repeat-badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>':''}</div>
           <div class="hw-title">${esc(h.title)}</div>
           ${timeLine}
         </div>
@@ -610,10 +739,13 @@ function openParentView() {
   document.getElementById('screen-parent').classList.remove('hidden');
   updateParentChildTabs();
   loadCalendarData();
+  loadParentPoints();
 }
 function closeParentView() {
-  if (unsubParent)       { unsubParent();       unsubParent       = null; }
-  if (unsubChecksParent) { unsubChecksParent(); unsubChecksParent = null; }
+  if (unsubParent)             { unsubParent();             unsubParent             = null; }
+  if (unsubChecksParent)       { unsubChecksParent();       unsubChecksParent       = null; }
+  if (unsubParentPointsSihyeon){ unsubParentPointsSihyeon();unsubParentPointsSihyeon= null; }
+  if (unsubParentPointsSion)   { unsubParentPointsSion();   unsubParentPointsSion   = null; }
   document.getElementById('screen-parent').classList.add('hidden');
   document.getElementById('screen-profile').classList.remove('hidden');
 }
@@ -621,6 +753,7 @@ function setParentChild(name) {
   parentChild = name;
   updateParentChildTabs();
   loadCalendarData();
+  renderParentPoints();
 }
 function updateParentChildTabs() {
   document.querySelectorAll('.parent-child-tab').forEach(b =>
@@ -749,16 +882,16 @@ async function openDayDetail(dateStr) {
   const hw = parentHwCache[dateStr] || [];
   const detailDow = new Date(dateStr + 'T00:00:00').getDay();
   const detailIsWeekend = detailDow === 0 || detailDow === 6;
-  const tmplForChild = parentTmplItems.filter(t => !(detailIsWeekend && t.weekendSkip));
   const tmplChecks = parentChecksCache[dateStr] || {};
+  const tmplForChild = parentTmplItems.filter(t => !(detailIsWeekend && t.weekendSkip) && !tmplChecks[`hidden_${t.id}`]);
 
   const allItems = [
     ...hw.map(h => ({
-      title: h.title, subject: h.subject, completed: h.completed, type: 'manual',
+      id: h.id, title: h.title, subject: h.subject, completed: h.completed, type: 'manual',
       completedAt: h.completedAt, completedTimeStr: h.completedTimeStr || null, stars: h.stars || null,
     })),
     ...tmplForChild.map(t => ({
-      title: t.title, subject: t.subject,
+      id: t.id, title: t.title, subject: t.subject,
       completed:        tmplChecks[t.id] || false, type: 'template',
       completedTimeStr: tmplChecks[`${t.id}_time`] || null,
       stars:            tmplChecks[`${t.id}_stars`] || null,
@@ -786,11 +919,14 @@ async function openDayDetail(dateStr) {
           <div class="daydetail-item${item.completed?' done':''}">
             <span class="daydetail-check">${item.completed?'✓':'○'}</span>
             <div style="flex:1;min-width:0">
-              <div class="hw-subj">${SUBJ_EMOJI[item.subject]||''} ${esc(item.subject)}${item.type==='template'?' <span class="repeat-badge">🔁</span>':''}</div>
+              <div class="hw-subj">${SUBJ_EMOJI[item.subject]||''} ${esc(item.subject)}${item.type==='template'?' <span class="repeat-badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>':''}</div>
               <div class="hw-title">${esc(item.title)}</div>
               ${timeLine}
               ${starLine}
             </div>
+            ${item.type === 'manual'
+              ? `<button class="del-btn" onclick="deleteDayDetailHw('${item.id}','${dateStr}')" aria-label="삭제">🗑️</button>`
+              : `<button class="del-btn" onclick="hideTmplForDayParent('${item.id}','${dateStr}')" aria-label="오늘 숨기기">🗑️</button>`}
           </div>`;
       }).join('');
 }

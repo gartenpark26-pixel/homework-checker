@@ -100,6 +100,7 @@
       </div>
       <div class="header-right">
         <button class="tmpl-btn" onclick="openTemplate()" aria-label="반복 숙제 템플릿">📋</button>
+        <button class="map-btn"  onclick="openMapScreen()" aria-label="기차 맵">🗺️</button>
       </div>
     </header>
 
@@ -109,6 +110,9 @@
       <span id="date-nav-label">오늘</span>
       <button class="date-nav-btn" onclick="navDate(1)" aria-label="내일">›</button>
     </div>
+
+    <!-- 포인트 배너 -->
+    <div id="points-banner" class="points-banner">⭐ 0포인트</div>
 
     <!-- 진행률 카드 -->
     <div class="progress-card">
@@ -163,10 +167,40 @@
     </div>
     <div id="tmpl-list"></div>
     <div id="tmpl-empty" class="state-box hidden">
-      <div class="state-icon">🔁</div>
+      <div class="state-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--theme)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></div>
       <p>반복 숙제가 없어요!<br><small>+ 버튼으로 추가해보세요</small></p>
     </div>
     <button id="fab-tmpl" class="fab" onclick="openTmplModal()" aria-label="반복 숙제 추가">＋</button>
+  </div>
+
+  <!-- ===== 기차 맵 화면 ===== -->
+  <div id="screen-map" class="hidden">
+    <header id="map-header">
+      <button class="back-btn" onclick="closeMapScreen()">‹ 뒤로</button>
+      <div class="header-center"><span>🗺️ 동물마을 기차여행</span></div>
+      <div class="header-right"></div>
+    </header>
+
+    <div class="map-pts-bar" id="map-pts-label">⭐ 0포인트 · 0번 칸 · 1바퀴째</div>
+
+    <div class="map-legend">
+      <span class="map-leg-sih">🐰 시현이</span>
+      <span class="map-leg-sep">·</span>
+      <span class="map-leg-sio">🐻 시온이</span>
+    </div>
+
+    <div class="map-board-wrap">
+      <div id="map-board" class="map-board"></div>
+    </div>
+
+    <div class="map-sq-legend">
+      <div class="map-sq-legend-row">
+        <span class="map-sq-leg-item">🏁 출발 (0번)</span>
+        <span class="map-sq-leg-item">🌳 큰나무 (10번)</span>
+        <span class="map-sq-leg-item">🏰 동화성 (20번)</span>
+        <span class="map-sq-leg-item">⛲ 분수대 (30번)</span>
+      </div>
+    </div>
   </div>
 
   <!-- ===== 부모 확인 화면 ===== -->
@@ -194,6 +228,47 @@
       <span>🌟 = 모두 완료</span>
       <span class="cal-legend-sep">·</span>
       <span>% = 부분 완료</span>
+    </div>
+
+    <!-- 포인트 현황 섹션 -->
+    <div class="parent-points-section">
+      <div class="parent-points-title">⭐ 포인트 현황</div>
+      <div class="parent-points-row">
+        <div class="parent-points-card sihyeon-pts">
+          <div class="pts-child-label">🐰 시현이</div>
+          <div class="pts-total" id="parent-pts-sihyeon">0포인트</div>
+          <div class="pts-adj-row">
+            <button class="pts-adj-btn sihyeon-pts" onclick="adjustPoints('시현이',-1)">−</button>
+            <button class="pts-adj-btn sihyeon-pts" onclick="adjustPoints('시현이',+1)">＋</button>
+          </div>
+        </div>
+        <div class="parent-points-card sion-pts">
+          <div class="pts-child-label">🐻 시온이</div>
+          <div class="pts-total" id="parent-pts-sion">0포인트</div>
+          <div class="pts-adj-row">
+            <button class="pts-adj-btn sion-pts" onclick="adjustPoints('시온이',-1)">−</button>
+            <button class="pts-adj-btn sion-pts" onclick="adjustPoints('시온이',+1)">＋</button>
+          </div>
+        </div>
+      </div>
+      <div class="pts-history-wrap">
+        <div class="pts-history-title" id="pts-history-label">최근 7일 내역</div>
+        <div id="parent-pts-history"></div>
+      </div>
+    </div>
+
+    <!-- 기차 맵 현황 (부모 확인 창) -->
+    <div class="parent-map-section">
+      <div class="parent-map-title" onclick="toggleParentMap()">
+        🗺️ 기차 맵 현황
+        <button id="parent-map-toggle" class="parent-map-toggle-btn">펼치기 ▼</button>
+      </div>
+      <div id="parent-map-body" class="parent-map-body hidden">
+        <div id="parent-map-info" class="parent-map-info"></div>
+        <div class="map-board-wrap">
+          <div id="parent-map-board" class="map-board"></div>
+        </div>
+      </div>
     </div>
 
     <div class="pin-reset-section">
@@ -291,10 +366,21 @@
     </div>
   </div>
 
+  <!-- ===== 맵 승리 모달 ===== -->
+  <div id="overlay-mapwin" class="overlay" style="z-index:400"></div>
+  <div id="modal-mapwin" class="modal mapwin-modal" role="dialog" aria-label="완주 축하">
+    <div class="mapwin-gift">🎁</div>
+    <h2 class="mapwin-title" id="mapwin-title">🎉 축하해요!</h2>
+    <p  class="mapwin-msg"   id="mapwin-msg">동물마을 한 바퀴 완주! 선물을 받았어요 🎁</p>
+    <p  class="mapwin-count" id="mapwin-count">누적 선물 1번째 🎁</p>
+    <button class="btn-add mapwin-confirm" onclick="confirmMapWin()">확인! 다시 출발! 🚂</button>
+  </div>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
   <script src="app.js"></script>
+  <script src="map.js"></script>
 </body>
 </html>

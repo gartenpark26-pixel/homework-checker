@@ -62,12 +62,12 @@ let _mapWinShown    = false;
 // ===== 위치 계산 =====
 function mapPos(total)   { return ((total % MAP_TOTAL) + MAP_TOTAL) % MAP_TOTAL; }
 
-// 11×11 그리드에서 외부 링 sq → {r,c}
+// 11×11 외부 링 (시계방향, 0번=좌상단)
 function gridToSq(r, c) {
-  if (r === 10)  return c;
-  if (c === 10)  return 20 - r;
-  if (r === 0)   return 30 - c;
-  return 30 + r;
+  if (r === 0)  return c;           // 상단: sq 0→10 (좌→우)
+  if (c === 10) return 10 + r;      // 우측: sq 11→20 (위→아래)
+  if (r === 10) return 30 - c;      // 하단: sq 21→30 (우→좌)
+  return 40 - r;                    // 좌측: sq 31→39 (아래→위)
 }
 
 // ===== 화면 열기/닫기 =====
@@ -110,25 +110,33 @@ function _buildBoard(sihTotal, sionTotal) {
   const sp = mapPos(sihTotal);
   const op = mapPos(sionTotal);
   const html = [];
-  let innerI = 0;
 
   for (let r = 0; r < 11; r++) {
     for (let c = 0; c < 11; c++) {
       const isOuter = (r === 0 || r === 10 || c === 0 || c === 10);
       if (!isOuter) {
-        const d = MAP_INNER_DECOS[innerI % MAP_INNER_DECOS.length];
-        innerI++;
-        html.push(`<div class="map-cell map-ci">${d}</div>`);
+        if (r === 1 && c === 1) {
+          html.push(
+            '<div class="map-inner">' +
+            '<div class="map-inner-title">🌈 동물마을 🌈</div>' +
+            '<div class="map-inner-sub">🐾 행복한 여행 🐾</div>' +
+            '<div class="map-inner-chars">🐰 🐻</div>' +
+            '</div>'
+          );
+        }
         continue;
       }
       const sq  = gridToSq(r, c);
       const sd  = MAP_SQUARES[sq];
       const sih = sp === sq;
       const sio = op === sq;
+      const isLandmark = (sq === 0 || sq === 10 || sq === 20 || sq === 30);
+      const edgeCls = r === 0 ? 'map-et' : c === 10 ? 'map-er' : r === 10 ? 'map-eb' : 'map-el';
       const tok = (sih ? '<span class="map-tok sih-tok" title="시현이">🐰</span>' : '')
                 + (sio ? '<span class="map-tok sio-tok" title="시온이">🐻</span>' : '');
       html.push(
-        `<div class="map-cell map-cs${sq === 0 ? ' map-start' : ''}" style="background:${sd.bg}" title="${sd.label}">` +
+        `<div class="map-cell map-cs ${edgeCls}${isLandmark ? ' map-lm' : ''}${sq === 0 ? ' map-start' : ''}` +
+        `" style="grid-column:${c + 1};grid-row:${r + 1};background:${sd.bg}" title="${sd.label}">` +
         `<div class="map-trow">${tok}</div>` +
         `<div class="map-emo">${sd.emoji}</div>` +
         `<div class="map-num">${sq}</div>` +

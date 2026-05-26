@@ -907,3 +907,83 @@ body {
 @media (min-width: 600px) {
   .mapwin-modal { max-width: 380px; }
 }
+
+/* ===== 맵 내부 영역 (단일 스패닝 블록) ===== */
+.map-inner {
+  grid-column: 2 / 11;
+  grid-row: 2 / 11;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #fffde7 30%, #e8f5e9 100%);
+  border-radius: 8px;
+  gap: 0.15rem;
+  text-align: center;
+  overflow: hidden;
+}
+.map-inner-title {
+  font-size: clamp(0.65rem, 2.2vw, 1rem);
+  font-weight: 900;
+  color: #5d4037;
+  letter-spacing: -0.02em;
+}
+.map-inner-sub {
+  font-size: clamp(0.5rem, 1.6vw, 0.75rem);
+  color: #8d6e63;
+}
+.map-inner-chars {
+  font-size: clamp(0.9rem, 3vw, 1.5rem);
+  letter-spacing: 0.2em;
+}
+
+/* ===== 랜드마크 칸 강조 ===== */
+.map-lm {
+  outline: 2px solid rgba(255, 200, 0, 0.75);
+  outline-offset: -2px;
+  z-index: 1;
+}
+.map-lm .map-emo { font-size: 1.1rem !important; }
+.map-start .map-emo { font-size: 1.05rem !important; }
+
+/* ===== 선로 트랙 (점선) ===== */
+.map-et::after,
+.map-er::after,
+.map-eb::after,
+.map-el::after {
+  content: '';
+  position: absolute;
+  border-radius: 2px;
+}
+.map-et::after { /* 상단행: 아래쪽에 선로 */
+  bottom: 2px; left: 10%; right: 10%; height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    #c8a060 0, #c8a060 3px,
+    transparent 3px, transparent 6px
+  );
+}
+.map-er::after { /* 우측열: 왼쪽에 선로 */
+  top: 10%; bottom: 10%; left: 2px; width: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    #c8a060 0, #c8a060 3px,
+    transparent 3px, transparent 6px
+  );
+}
+.map-eb::after { /* 하단행: 위쪽에 선로 */
+  top: 2px; left: 10%; right: 10%; height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    #c8a060 0, #c8a060 3px,
+    transparent 3px, transparent 6px
+  );
+}
+.map-el::after { /* 좌측열: 오른쪽에 선로 */
+  top: 10%; bottom: 10%; right: 2px; width: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    #c8a060 0, #c8a060 3px,
+    transparent 3px, transparent 6px
+  );
+}

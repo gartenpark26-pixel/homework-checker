@@ -1252,3 +1252,27 @@ body {
   );
   width: 4px; margin: auto;
 }
+
+/* 맵 색감 개선 */
+.map-cell {
+  background: #ffffff !important;
+  border-color: #e8e0f0 !important;
+}
+.map-cell.special-10 { background: #e8f5e9 !important; }
+.map-cell.special-20 { background: #f3e5f5 !important; }
+.map-cell.special-30 { background: #e3f2fd !important; }
+.map-cell.special-40 { background: #fff8e1 !important; }
+
+/* 칸 아이콘 크기 조정 */
+.map-cell .cell-icon {
+  font-size: 1.4em !important;
+  display: block;
+  text-align: center;
+}
+.map-cell .cell-num {
+  font-size: 0.6em !important;
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  opacity: 0.6;
+}

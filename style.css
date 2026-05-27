@@ -1235,3 +1235,20 @@ body {
   filter: drop-shadow(0 1px 4px rgba(80, 60, 40, 0.18)) !important;
   letter-spacing: 0.25em !important;
 }
+
+/* 기차 선로 개선 */
+.map-cell.corner { border-radius: 50%; }
+.map-track-h {
+  background: repeating-linear-gradient(
+    90deg, #8B6914 0px, #8B6914 4px,
+    transparent 4px, transparent 12px
+  );
+  height: 4px; margin: auto;
+}
+.map-track-v {
+  background: repeating-linear-gradient(
+    180deg, #8B6914 0px, #8B6914 4px,
+    transparent 4px, transparent 12px
+  );
+  width: 4px; margin: auto;
+}

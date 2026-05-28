@@ -1558,3 +1558,181 @@ body {
 .map-legend-item:nth-child(3) { color: #A855F7; }
 .map-legend-item:nth-child(4) { color: #38BDF8; }
 
+/* ===== 기존 선로 CSS 무력화 (이전 버전 잔재 제거) ===== */
+.map-cell::after,
+.map-cell::before,
+.map-cell.track-h::after,
+.map-cell.track-v::after,
+.map-cell.track-corner::after { display: none !important; }
+
+/* ===== 보드 기본 ===== */
+#map-board,
+#parent-map-board {
+  position: relative !important;
+  background: linear-gradient(135deg, #fdf4ff 0%, #eff6ff 50%, #f0fdf4 100%) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+  gap: 2px !important;
+}
+
+/* ===== 각 칸 ===== */
+.map-cell {
+  position: relative !important;
+  overflow: visible !important;
+  background: #ffffff !important;
+  border: 1.5px solid #EDE8F8 !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px !important;
+  gap: 0 !important;
+}
+
+/* 랜드마크 칸 */
+.map-cell.map-lm {
+  border: 2px solid #C4B0F0 !important;
+  box-shadow: 0 0 0 2px #EDE8FC inset !important;
+}
+
+/* ===== 칸 내부 선로 SVG ===== */
+.ct {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0.8 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ===== 칸 번호 (모든 칸에 표시) ===== */
+.map-cell .map-num {
+  position: relative !important;
+  z-index: 2 !important;
+  font-size: 0.6em !important;
+  font-weight: 800 !important;
+  color: #7C6BB0 !important;
+  background: rgba(255,255,255,0.85) !important;
+  border-radius: 6px !important;
+  padding: 1px 4px !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  border: 1px solid #DDD0F8 !important;
+}
+
+/* ===== 랜드마크 아이콘 ===== */
+.map-lm-icon {
+  position: relative !important;
+  z-index: 2 !important;
+  width: 72% !important;
+  height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.lm-icon {
+  width: 100% !important;
+  height: auto !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12)) !important;
+}
+
+.map-lm-label {
+  position: relative !important;
+  z-index: 2 !important;
+  font-size: 0.5em !important;
+  font-weight: 700 !important;
+  color: #6B5BB0 !important;
+  line-height: 1.2 !important;
+}
+
+/* ===== 토큰 오버레이 ===== */
+.map-tok-svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 30 !important;
+  overflow: visible !important;
+}
+
+/* ===== 가운데 내부 영역 ===== */
+.map-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  padding: 20px 16px !important;
+  background: linear-gradient(135deg, #fef9ff 0%, #f0f9ff 50%, #f9fff0 100%) !important;
+  border-radius: 10px !important;
+  border: 1.5px solid #E8E0F8 !important;
+  height: 100% !important;
+}
+
+.map-inner-title {
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  color: #6B3FA0 !important;
+  letter-spacing: -0.02em !important;
+  text-align: center !important;
+}
+
+.map-inner-sub {
+  font-size: 0.62rem !important;
+  color: #A094C0 !important;
+  text-align: center !important;
+  margin-top: -6px !important;
+}
+
+.map-inner-cards {
+  display: flex !important;
+  gap: 10px !important;
+}
+
+.map-icard {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important;
+  background: white !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  min-width: 68px !important;
+  box-shadow: 0 2px 8px rgba(107,59,160,0.1) !important;
+}
+
+.sih-icard { border-top: 3px solid #F9A8D4 !important; }
+.sio-icard { border-top: 3px solid #93C5FD !important; }
+
+.mic-emoji { font-size: 1.4rem !important; line-height: 1 !important; }
+.mic-name  { font-size: 0.65rem !important; font-weight: 700 !important; color: #6B3FA0 !important; }
+.mic-pt    { font-size: 0.85rem !important; font-weight: 800 !important; color: #374151 !important; }
+.mic-pos   { font-size: 0.6rem !important; color: #9CA3AF !important; }
+.mic-gift  { font-size: 0.65rem !important; color: #F59E0B !important; }
+
+.map-inner-legend {
+  display: flex !important;
+  gap: 5px !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+}
+
+.map-inner-legend span {
+  font-size: 0.58rem !important;
+  color: #7C6BB0 !important;
+  background: #F3EEFF !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  border: 1px solid #DDD0F8 !important;
+  font-weight: 600 !important;
+}
+
+/* ===== 전체 맵 화면 배경 ===== */
+#screen-map {
+  background: linear-gradient(160deg, #FDF4FF 0%, #EFF6FF 100%) !important;
+}
+

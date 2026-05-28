@@ -480,6 +480,7 @@ function submitHw() {
 // ===== 템플릿 화면 =====
 let tmplSubj = '수학';
 let tmplWeekendSkip = false;
+let tmplEditId = null;
 function openTemplate() {
   document.getElementById('screen-main').classList.add('hidden');
   document.getElementById('screen-template').classList.remove('hidden');
@@ -502,6 +503,7 @@ function renderTemplate() {
         <div class="hw-title">${esc(t.title)}</div>
       </div>
       <button class="tmpl-weekend-btn${t.weekendSkip ? ' skip' : ''}" onclick="toggleWeekendSkip('${t.id}')" title="${t.weekendSkip ? '평일만 표시 중' : '매일 표시 중'}">${t.weekendSkip ? '평일만' : '매일'}</button>
+      <button class="edit-btn" onclick="openTmplEditModal('${t.id}')" aria-label="수정">✏️</button>
       <button class="del-btn" onclick="deleteTmplItem('${t.id}')" aria-label="삭제">🗑️</button>
     </div>`).join('');
 }
@@ -542,8 +544,29 @@ function toggleTmplWeekend() {
   btn.textContent = tmplWeekendSkip ? '평일만' : '주말 포함';
 }
 function closeTmplModal() {
+  tmplEditId = null;
   document.getElementById('overlay-tmpl').classList.remove('on');
   document.getElementById('modal-tmpl').classList.remove('on');
+}
+function openTmplEditModal(id) {
+  const item = templateItems.find(t => t.id === id);
+  if (!item) return;
+  tmplEditId = id;
+  document.getElementById('tmpl-input').value = item.title;
+  document.getElementById('tmpl-input').classList.remove('shake');
+  tmplSubj = item.subject || '수학';
+  tmplWeekendSkip = item.weekendSkip || false;
+  document.querySelectorAll('.tmpl-subj-btn').forEach(b => b.classList.remove('active'));
+  const subBtn = document.querySelector(`.tmpl-subj-btn[data-s="${tmplSubj}"]`);
+  if (subBtn) subBtn.classList.add('active');
+  const wBtn = document.getElementById('btn-weekend-toggle');
+  wBtn.classList.toggle('skip', tmplWeekendSkip);
+  wBtn.textContent = tmplWeekendSkip ? '평일만' : '주말 포함';
+  document.getElementById('btn-add-tmpl').disabled = false;
+  document.getElementById('btn-add-tmpl').textContent = '수정하기';
+  document.getElementById('overlay-tmpl').classList.add('on');
+  document.getElementById('modal-tmpl').classList.add('on');
+  setTimeout(() => document.getElementById('tmpl-input').focus(), 380);
 }
 function pickTmplSubj(btn) {
   tmplSubj = btn.dataset.s;
@@ -557,10 +580,20 @@ function submitTmpl() {
     input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
     input.focus(); return;
   }
+  const editId = tmplEditId;
   closeTmplModal();
-  db.collection('templates').doc(profile)
-    .set({ items: [...templateItems, { id: genId(), subject: tmplSubj, title, weekendSkip: tmplWeekendSkip }] })
-    .catch(e => { console.error(e); alert('반복 숙제 추가에 실패했어요.'); });
+  if (editId) {
+    const updated = templateItems.map(t =>
+      t.id === editId ? { ...t, subject: tmplSubj, title, weekendSkip: tmplWeekendSkip } : t
+    );
+    db.collection('templates').doc(profile)
+      .set({ items: updated })
+      .catch(e => { console.error(e); alert('반복 숙제 수정에 실패했어요.'); });
+  } else {
+    db.collection('templates').doc(profile)
+      .set({ items: [...templateItems, { id: genId(), subject: tmplSubj, title, weekendSkip: tmplWeekendSkip }] })
+      .catch(e => { console.error(e); alert('반복 숙제 추가에 실패했어요.'); });
+  }
 }
 
 // ===== PIN =====
@@ -836,7 +869,7 @@ function renderCalendar() {
     const checks   = parentChecksCache[ds] || {};
     const calDow   = new Date(ds + 'T00:00:00').getDay();
     const calIsWe  = calDow === 0 || calDow === 6;
-    const tmplVisible = parentTmplItems.filter(t => !(calIsWe && t.weekendSkip));
+    const tmplVisible = parentTmplItems.filter(t => !(calIsWe && t.weekendSkip) && !checks[`hidden_${t.id}`]);
     const tmplDone = tmplVisible.filter(t => checks[t.id] === true).length;
     const tot      = hw.length + tmplVisible.length;
     const don      = hw.filter(h => h.completed).length + tmplDone;

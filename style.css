@@ -256,6 +256,15 @@ body {
 .del-btn:hover  { opacity: 0.6; }
 .del-btn:active { transform: scale(0.88); }
 
+.edit-btn {
+  background: none; border: none; font-size: 1.1rem;
+  cursor: pointer; opacity: 0.4; padding: 0.25rem; flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.15s; line-height: 1;
+  margin-top: 0.1rem;
+}
+.edit-btn:hover  { opacity: 0.75; }
+.edit-btn:active { transform: scale(0.88); }
+
 .repeat-badge { display: inline-flex; align-items: center; flex-shrink: 0; opacity: 0.6; line-height: 1; margin-top: 0.1rem; }
 .repeat-badge svg { width: 13px; height: 13px; stroke: var(--theme); }
 

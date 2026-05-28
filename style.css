@@ -1276,3 +1276,142 @@ body {
   right: 3px;
   opacity: 0.6;
 }
+
+/* ===== 기차 선로 개선 ===== */
+
+/* 가운데 내부 카드 */
+.map-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #fdf6ff 0%, #f0f9ff 50%, #f9fdf0 100%);
+  border-radius: 16px;
+}
+
+.map-inner-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #7c3aed;
+  letter-spacing: -0.02em;
+}
+
+.map-inner-tracks {
+  width: 80%;
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    #c4b5a0 0px, #c4b5a0 6px,
+    transparent 6px, transparent 10px
+  );
+  border-top: 2px solid #a89070;
+  border-bottom: 2px solid #a89070;
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.map-inner-info {
+  display: flex;
+  gap: 12px;
+}
+
+.map-inner-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: white;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  min-width: 60px;
+}
+
+.sih-card { border-top: 3px solid #f9a8d4; }
+.sio-card { border-top: 3px solid #93c5fd; }
+
+.map-inner-tok { font-size: 1.2rem; }
+.map-inner-name { font-size: 0.65rem; font-weight: 600; color: #6b7280; }
+.map-inner-pt { font-size: 0.75rem; font-weight: 700; color: #7c3aed; }
+
+/* 선로 스타일 */
+.map-cell.track-h {
+  position: relative;
+}
+.map-cell.track-h::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%; transform: translateY(-50%);
+  height: 6px;
+  background: repeating-linear-gradient(
+    90deg,
+    #b8a090 0px, #b8a090 5px,
+    transparent 5px, transparent 9px
+  );
+  border-top: 1.5px solid #9a7e6a;
+  border-bottom: 1.5px solid #9a7e6a;
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+.map-cell.track-v {
+  position: relative;
+}
+.map-cell.track-v::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%; transform: translateX(-50%);
+  width: 6px;
+  background: repeating-linear-gradient(
+    180deg,
+    #b8a090 0px, #b8a090 5px,
+    transparent 5px, transparent 9px
+  );
+  border-left: 1.5px solid #9a7e6a;
+  border-right: 1.5px solid #9a7e6a;
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+/* 칸 내용이 선로 위에 오도록 */
+.map-cell .map-trow,
+.map-cell .map-emo,
+.map-cell .map-num {
+  position: relative;
+  z-index: 1;
+}
+
+/* 칸 색감 */
+.map-cell {
+  background: #ffffff !important;
+}
+.map-cell.map-lm {
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2) inset;
+}
+
+/* 아이콘 크기 */
+.map-cell .map-emo {
+  font-size: 1.1em;
+  line-height: 1;
+}
+.map-cell .map-num {
+  font-size: 0.55em;
+  opacity: 0.5;
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+}
+
+/* 하단 범례 아이콘 색상 */
+.map-legend-item:nth-child(1) { color: #F59E0B; }
+.map-legend-item:nth-child(2) { color: #22C55E; }
+.map-legend-item:nth-child(3) { color: #A855F7; }
+.map-legend-item:nth-child(4) { color: #38BDF8; }
+

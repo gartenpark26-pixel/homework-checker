@@ -1277,6 +1277,149 @@ body {
   opacity: 0.6;
 }
 
+/* ===== 맵 보드 기본 ===== */
+#map-board,
+#parent-map-board {
+  position: relative !important;
+}
+
+/* ===== 각 칸 ===== */
+.map-cell {
+  position: relative !important;
+  overflow: hidden !important;
+  background: #ffffff;
+  border: 1px solid #ede8e0 !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 1px !important;
+  padding: 2px !important;
+}
+
+/* 랜드마크 칸 강조 */
+.map-cell.map-lm {
+  border: 2px solid #c4b090 !important;
+  box-shadow: 0 0 0 1px #e8d8b8 inset !important;
+}
+
+/* ===== 칸 내부 선로 SVG ===== */
+.ct {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0.65;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 칸 내용은 선로 위에 */
+.map-cell .map-emo,
+.map-cell .map-num {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.map-cell .map-emo {
+  font-size: 1.05em !important;
+  line-height: 1 !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
+}
+
+.map-cell .map-num {
+  font-size: 0.52em !important;
+  opacity: 0.45 !important;
+  font-weight: 600 !important;
+  color: #8B7355 !important;
+  letter-spacing: 0 !important;
+}
+
+/* ===== 토큰 오버레이 SVG ===== */
+.map-tok-svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 20 !important;
+}
+
+/* ===== 가운데 내부 영역 ===== */
+.map-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  padding: 16px !important;
+  background: linear-gradient(135deg, #fefaf5 0%, #f5f0ff 50%, #f0f8ff 100%) !important;
+  border-radius: 12px !important;
+  border: 1px solid #e8e0d0 !important;
+}
+
+.map-inner-title {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  color: #5B4ECF !important;
+  letter-spacing: -0.02em !important;
+  text-align: center !important;
+}
+
+.map-inner-sub {
+  font-size: 0.65rem !important;
+  color: #9B8EA0 !important;
+  text-align: center !important;
+  margin-top: -6px !important;
+}
+
+.map-inner-cards {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.map-icard {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important;
+  background: white !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  min-width: 64px !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+}
+
+.sih-icard { border-top: 3px solid #F9A8D4 !important; }
+.sio-icard { border-top: 3px solid #93C5FD !important; }
+
+.mic-emoji { font-size: 1.3rem !important; }
+.mic-name  { font-size: 0.65rem !important; font-weight: 700 !important; color: #5B4ECF !important; }
+.mic-pt    { font-size: 0.8rem !important; font-weight: 800 !important; color: #374151 !important; }
+.mic-gift  { font-size: 0.6rem !important; color: #9CA3AF !important; }
+
+.map-inner-legend {
+  display: flex !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+}
+
+.map-inner-legend span {
+  font-size: 0.6rem !important;
+  color: #8B7355 !important;
+  background: #FFF8F0 !important;
+  border-radius: 4px !important;
+  padding: 2px 5px !important;
+  border: 1px solid #E8D5B8 !important;
+}
+
+/* 전체 맵 배경 */
+#screen-map {
+  background: linear-gradient(160deg, #fdf6ee 0%, #f0eeff 100%) !important;
+}
+
 /* ===== 기차 선로 개선 ===== */
 
 /* 가운데 내부 카드 */

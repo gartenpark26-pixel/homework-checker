@@ -119,13 +119,23 @@ async function checkAndAwardPoints(lastDoneStr) {
   if (!profile || viewDate !== todayKey()) return;
   const lastMin = krTimeToMinutes(lastDoneStr);
   if (lastMin < 0 || lastMin > POINT_CUTOFF_MIN) return;
-  if (pointsData.history.some(h => h.date === todayKey())) return;
+  if (pointsData.history.some(h => h.date === todayKey())) return; // 빠른 로컬 사전 차단
+  const today   = todayKey();
   const childId = CHILD_IDS[profile];
+  const ref     = db.collection('points').doc(childId);
   try {
-    await db.collection('points').doc(childId).set({
-      total:   firebase.firestore.FieldValue.increment(1),
-      history: firebase.firestore.FieldValue.arrayUnion({ date: todayKey(), earnedAt: lastDoneStr }),
-    }, { merge: true });
+    // 트랜잭션으로 서버 상태를 원자적으로 재확인해 같은 날 중복 적립 방지
+    // (다른 화면/기기에서 로컬 캐시가 아직 갱신되지 않은 경쟁 상태 대응)
+    await db.runTransaction(async tx => {
+      const snap    = await tx.get(ref);
+      const data    = snap.exists ? snap.data() : {};
+      const history = data.history || [];
+      if (history.some(h => h.date === today)) return; // 서버 기준 이미 오늘 적립됨
+      tx.set(ref, {
+        total:   (data.total || 0) + 1,
+        history: [...history, { date: today, earnedAt: lastDoneStr }],
+      }, { merge: true });
+    });
   } catch (e) { console.error('포인트 적립 실패:', e); }
 }
 

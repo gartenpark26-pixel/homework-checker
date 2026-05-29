@@ -2,82 +2,24 @@
 
 const MAP_TOTAL = 40;
 
-// 랜드마크 칸(0,10,20,30)만 아이콘 사용 - Sanrio/카카오 무드 SVG
-const LANDMARK_ICONS = {
-  0: `<svg class="lm-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-    <!-- 출발역: 귀여운 기차역 -->
-    <rect x="4" y="22" width="28" height="5" rx="2.5" fill="#FDE68A" stroke="#F59E0B" stroke-width="1.2"/>
-    <rect x="6" y="13" width="20" height="10" rx="3" fill="#FEF9C3" stroke="#F59E0B" stroke-width="1.2"/>
-    <rect x="6" y="13" width="6" height="10" rx="2" fill="#FCD34D" fill-opacity="0.5"/>
-    <circle cx="11" cy="22" r="2.5" fill="white" stroke="#F59E0B" stroke-width="1.2"/>
-    <circle cx="22" cy="22" r="2.5" fill="white" stroke="#F59E0B" stroke-width="1.2"/>
-    <rect x="23" y="7" width="2" height="8" rx="1" fill="#F59E0B"/>
-    <path d="M25 7 l5 2.5 -5 2.5z" fill="#EF4444"/>
-    <circle cx="8" cy="6" r="1.8" fill="#FCD34D"/>
-    <circle cx="18" cy="4" r="2.2" fill="#FCD34D"/>
-    <circle cx="27" cy="7" r="1.5" fill="#FCD34D"/>
-  </svg>`,
-
-  10: `<svg class="lm-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-    <!-- 큰나무: 귀여운 둥근 나무 캐릭터 -->
-    <circle cx="18" cy="13" r="11" fill="#86EFAC" stroke="#22C55E" stroke-width="1.5"/>
-    <circle cx="13" cy="10" r="5" fill="#A3E635" stroke="#65A30D" stroke-width="1"/>
-    <circle cx="23" cy="10" r="5" fill="#A3E635" stroke="#65A30D" stroke-width="1"/>
-    <circle cx="18" cy="8" r="5" fill="#BBF7D0" stroke="#22C55E" stroke-width="1"/>
-    <!-- 얼굴 -->
-    <circle cx="15" cy="14" r="1.2" fill="#15803D"/>
-    <circle cx="21" cy="14" r="1.2" fill="#15803D"/>
-    <path d="M15 17 Q18 20 21 17" fill="none" stroke="#15803D" stroke-width="1.2" stroke-linecap="round"/>
-    <circle cx="17" cy="15.5" r="1" fill="#FCA5A5" stroke="none" opacity="0.7"/>
-    <circle cx="19" cy="15.5" r="1" fill="#FCA5A5" stroke="none" opacity="0.7"/>
-    <!-- 나무줄기 -->
-    <rect x="15" y="23" width="6" height="8" rx="2" fill="#92400E"/>
-  </svg>`,
-
-  20: `<svg class="lm-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-    <!-- 동화성: 핑크 성 -->
-    <rect x="5" y="16" width="26" height="14" rx="2" fill="#FAE8FF" stroke="#D946EF" stroke-width="1.2"/>
-    <!-- 탑들 -->
-    <rect x="5" y="10" width="7" height="8" rx="1" fill="#F5D0FE" stroke="#D946EF" stroke-width="1"/>
-    <rect x="14" y="7" width="8" height="11" rx="1" fill="#F5D0FE" stroke="#D946EF" stroke-width="1"/>
-    <rect x="24" y="10" width="7" height="8" rx="1" fill="#F5D0FE" stroke="#D946EF" stroke-width="1"/>
-    <!-- 뾰족 지붕 -->
-    <path d="M5 10 L8.5 4 L12 10z" fill="#E879F9" stroke="#A21CAF" stroke-width="0.8"/>
-    <path d="M14 7 L18 1 L22 7z" fill="#E879F9" stroke="#A21CAF" stroke-width="0.8"/>
-    <path d="M24 10 L27.5 4 L31 10z" fill="#E879F9" stroke="#A21CAF" stroke-width="0.8"/>
-    <!-- 문 -->
-    <path d="M16 30 Q18 26 20 30z" fill="#D946EF" fill-opacity="0.3"/>
-    <rect x="16" y="23" width="4" height="7" rx="2" fill="#D946EF" fill-opacity="0.3" stroke="#D946EF" stroke-width="0.8"/>
-    <!-- 별 장식 -->
-    <text x="18" y="22" text-anchor="middle" font-size="5">⭐</text>
-    <circle cx="8" cy="4" r="1.2" fill="#FDE047"/>
-    <circle cx="28" cy="4" r="1.2" fill="#FDE047"/>
-    <circle cx="18" cy="1" r="1.5" fill="#FDE047"/>
-  </svg>`,
-
-  30: `<svg class="lm-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-    <!-- 분수대: 파란 분수 -->
-    <ellipse cx="18" cy="31" rx="12" ry="3.5" fill="#BAE6FD" stroke="#38BDF8" stroke-width="1.2"/>
-    <ellipse cx="18" cy="25" rx="7" ry="2.5" fill="#E0F2FE" stroke="#0EA5E9" stroke-width="1"/>
-    <rect x="16" y="17" width="4" height="9" rx="1.5" fill="#7DD3FC"/>
-    <!-- 물줄기 -->
-    <path d="M18 17 Q12 10 8 14" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M18 17 Q24 10 28 14" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M18 17 Q10 8 10 12" fill="none" stroke="#7DD3FC" stroke-width="1.2" stroke-linecap="round"/>
-    <path d="M18 17 Q26 8 26 12" fill="none" stroke="#7DD3FC" stroke-width="1.2" stroke-linecap="round"/>
-    <path d="M18 17 Q17 6 18 8" fill="none" stroke="#BAE6FD" stroke-width="1.5" stroke-linecap="round"/>
-    <!-- 물방울 -->
-    <circle cx="8" cy="14" r="2" fill="#38BDF8" opacity="0.7"/>
-    <circle cx="28" cy="14" r="2" fill="#38BDF8" opacity="0.7"/>
-    <circle cx="10" cy="12" r="1.5" fill="#7DD3FC" opacity="0.6"/>
-    <circle cx="26" cy="12" r="1.5" fill="#7DD3FC" opacity="0.6"/>
-    <circle cx="18" cy="8" r="2" fill="#BAE6FD" opacity="0.8"/>
-  </svg>`,
+// ===== 특별 칸 (부루마블 빈도: 5칸마다 1개) =====
+// 미니멀 라인 아이콘 + 포인트 컬러
+const SPECIAL_CELLS = {
+  0:  { label: '출발',   color: '#F59E0B', bg: '#FFFBEB', icon: '<path d="M6 21V3M6 4h11l-2.4 3.5L17 11H6" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+  5:  { label: '쉼터',   color: '#10B981', bg: '#ECFDF5', icon: '<path d="M12 21v-7M12 14c-4 0-6-3-5-7 4-1 5 3 5 5 0-2 1-6 5-5 1 4-1 7-5 7z" fill="none" stroke="#10B981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+  10: { label: '큰나무', color: '#22C55E', bg: '#F0FDF4', icon: '<path d="M12 21v-4M12 3l6 8h-3l4 5H5l4-5H6z" fill="none" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+  15: { label: '카페',   color: '#F97316', bg: '#FFF7ED', icon: '<path d="M5 8h11v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4zM16 9h3v3a3 3 0 0 1-3 3M7 5c0-1.5 1-1.5 1-3M11 5c0-1.5 1-1.5 1-3" fill="none" stroke="#F97316" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+  20: { label: '동화성', color: '#A855F7', bg: '#FAF5FF', icon: '<path d="M4 21V10l2 1.5L8 9l2 2.5L12 8l2 3.5L16 9l2 2.5L20 10v11zM10 21v-4a2 2 0 0 1 4 0v4" fill="none" stroke="#A855F7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+  25: { label: '놀이터', color: '#EC4899', bg: '#FDF2F8', icon: '<circle cx="12" cy="9" r="6" fill="none" stroke="#EC4899" stroke-width="1.8"/><path d="M10.5 14.5q1.5 2 3 0M12 18v3M10.5 21h3" fill="none" stroke="#EC4899" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+  30: { label: '분수대', color: '#0EA5E9', bg: '#F0F9FF', icon: '<path d="M12 3s-7 8-7 12a7 7 0 0 0 14 0c0-4-7-12-7-12z" fill="none" stroke="#0EA5E9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+  35: { label: '별빛',   color: '#EAB308', bg: '#FEFCE8', icon: '<path d="M12 3l2.4 6.2L21 9.6l-5 4.3L17.6 21 12 17.2 6.4 21 8 13.9 3 9.6l6.6-.4z" fill="none" stroke="#EAB308" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
 };
 
-// 선로 색상 - 밝은 파스텔 라벤더
-const _RC = '#C4B0F0';  // rail color (라벤더)
-const _TC = '#A090D8';  // tie color  (중간 보라)
+/* ====================================================== */
+/* ===== 아래 선로/기차 토큰 코드는 절대 수정 안 함 ===== */
+/* ====================================================== */
+const _RC = '#C4B0F0';
+const _TC = '#A090D8';
 const _RW = 2;
 const _TW = 3.5;
 
@@ -99,28 +41,24 @@ const TRACK_SVG = {
     <line x1="16" y1="0" x2="16" y2="40" stroke="${_RC}" stroke-width="${_RW}"/>
     <line x1="24" y1="0" x2="24" y2="40" stroke="${_RC}" stroke-width="${_RW}"/>
   </svg>`,
-  // 좌상단(sq0): 아래→오른쪽
   tl: `<svg class="ct" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
     <path d="M 16,40 Q 16,16 40,16" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
     <path d="M 24,40 Q 24,24 40,24" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
     <line x1="13" y1="30" x2="22" y2="26" stroke="${_TC}" stroke-width="${_TW}" stroke-linecap="round"/>
     <line x1="26" y1="13" x2="30" y2="22" stroke="${_TC}" stroke-width="${_TW}" stroke-linecap="round"/>
   </svg>`,
-  // 우상단(sq10): 왼쪽→아래
   tr: `<svg class="ct" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
     <path d="M 0,16 Q 24,16 24,40" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
     <path d="M 0,24 Q 16,24 16,40" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
     <line x1="10" y1="13" x2="13" y2="22" stroke="${_TC}" stroke-width="${_TW}" stroke-linecap="round"/>
     <line x1="27" y1="27" x2="18" y2="30" stroke="${_TC}" stroke-width="${_TW}" stroke-linecap="round"/>
   </svg>`,
-  // 우하단(sq20): 위→왼쪽
   br: `<svg class="ct" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
     <path d="M 24,0 Q 24,24 0,24" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
     <path d="M 16,0 Q 16,16 0,16" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
     <line x1="27" y1="10" x2="18" y2="13" stroke="${_TC}" stroke-width="${_TW}" stroke-linecap="round"/>
     <line x1="13" y1="27" x2="10" y2="18" stroke="${_TC}" stroke-width="${_TW}" stroke-linecap="round"/>
   </svg>`,
-  // 좌하단(sq30): 오른쪽→위
   bl: `<svg class="ct" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
     <path d="M 40,24 Q 16,24 16,0" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
     <path d="M 40,16 Q 24,16 24,0" fill="none" stroke="${_RC}" stroke-width="${_RW}"/>
@@ -138,43 +76,30 @@ function _getTrackSVG(sq) {
   return (r === 0 || r === 10) ? TRACK_SVG.h : TRACK_SVG.v;
 }
 
-// ===== 랜드마크 칸 레이블 =====
-const LANDMARK_LABELS = { 0:'출발역', 10:'큰나무', 20:'동화성', 30:'분수대' };
-
-// ===== 토큰 SVG: 기차에 탑승한 캐릭터 =====
-// 기차 모양 + 캐릭터가 창문 안에 보이는 형태
 function _trainToken(x, y, emoji, color, strokeColor, name) {
   return `<g transform="translate(${x},${y})">
-    <!-- 그림자 -->
     <ellipse rx="36" ry="7" cy="30" fill="rgba(0,0,0,0.10)"/>
-    <!-- 기차 몸통 -->
     <rect x="-34" y="-10" width="68" height="28" rx="10" fill="${color}" stroke="${strokeColor}" stroke-width="3"/>
-    <!-- 굴뚝 -->
     <rect x="-26" y="-24" width="10" height="16" rx="4" fill="${color}" stroke="${strokeColor}" stroke-width="2"/>
-    <!-- 연기 -->
     <circle cx="-21" cy="-29" r="5" fill="white" opacity="0.75"/>
     <circle cx="-14" cy="-34" r="4" fill="white" opacity="0.55"/>
     <circle cx="-8" cy="-37" r="3" fill="white" opacity="0.35"/>
-    <!-- 기차 앞면 -->
     <rect x="30" y="-6" width="12" height="16" rx="4" fill="${strokeColor}" opacity="0.6"/>
-    <!-- 헤드라이트 -->
     <circle cx="40" cy="-1" r="3.5" fill="#FDE68A"/>
-    <!-- 창문 (캐릭터 표시) -->
     <rect x="-12" y="-8" width="26" height="20" rx="5" fill="white" stroke="${strokeColor}" stroke-width="2"/>
-    <!-- 캐릭터 이모지 -->
     <text x="1" y="6" text-anchor="middle" dominant-baseline="middle" font-size="18">${emoji}</text>
-    <!-- 바퀴 -->
     <circle cx="-20" cy="20" r="9" fill="white" stroke="${strokeColor}" stroke-width="2.5"/>
     <circle cx="-20" cy="20" r="4" fill="${strokeColor}" opacity="0.3"/>
     <circle cx="16" cy="20" r="9" fill="white" stroke="${strokeColor}" stroke-width="2.5"/>
     <circle cx="16" cy="20" r="4" fill="${strokeColor}" opacity="0.3"/>
-    <!-- 이름 레이블 -->
     <rect x="-22" y="32" width="44" height="16" rx="8" fill="${strokeColor}" opacity="0.85"/>
     <text x="0" y="41" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="white" font-weight="700">${name}</text>
   </g>`;
 }
+/* ====================================================== */
+/* ===== 위 선로/기차 토큰 코드 끝 ===== */
+/* ====================================================== */
 
-// ===== 상태 =====
 const mapPts  = { '시현이': 0, '시온이': 0 };
 const mapGift = { '시현이': 0, '시온이': 0 };
 let unsubMapSih  = null;
@@ -200,7 +125,18 @@ function _sqToXY(sq) {
   return { x: c * 100 + 50, y: r * 100 + 50 };
 }
 
-// ===== 화면 열기/닫기 =====
+// 번호/아이콘 배지를 선로 없는 바깥쪽에 배치
+function _badgePos(sq, r, c) {
+  if (sq === 0)  return 'b-tl';
+  if (sq === 10) return 'b-tr';
+  if (sq === 20) return 'b-br';
+  if (sq === 30) return 'b-bl';
+  if (r === 0)   return 'b-tc';
+  if (c === 10)  return 'b-rc';
+  if (r === 10)  return 'b-bc';
+  return 'b-lc';
+}
+
 function openMapScreen() {
   mapCurrentChild = profile;
   document.getElementById('screen-main').classList.add('hidden');
@@ -235,6 +171,25 @@ function _stopMapSubs() {
   if (unsubMapSion) { unsubMapSion(); unsubMapSion = null; }
 }
 
+// ===== 중앙 워드마크 (드로잉 느낌, 아이콘 없음) =====
+const CENTER_WORDMARK = `<svg class="map-wordmark" viewBox="0 0 260 96" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wmg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F472B6"/>
+      <stop offset="48%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+  </defs>
+  <path d="M22 76 Q130 94 238 76" fill="none" stroke="#DCCBF5" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>
+  <circle cx="22" cy="76" r="3.5" fill="#C4B0F0"/>
+  <circle cx="238" cy="76" r="3.5" fill="#C4B0F0"/>
+  <text x="130" y="40" text-anchor="middle" font-size="30" font-weight="800" fill="url(#wmg)" style="letter-spacing:-1px">동물마을</text>
+  <text x="130" y="66" text-anchor="middle" font-size="21" font-weight="700" fill="#9277C9" style="letter-spacing:3px">기 차 여 행</text>
+  <text x="34" y="22" font-size="13" fill="#F9A8D4">✦</text>
+  <text x="218" y="20" font-size="11" fill="#A78BFA">✦</text>
+  <text x="210" y="44" font-size="9" fill="#93C5FD">✦</text>
+</svg>`;
+
 // ===== 보드 렌더링 =====
 function _buildBoard(sihTotal, sionTotal) {
   const sp = mapPos(sihTotal);
@@ -247,26 +202,21 @@ function _buildBoard(sihTotal, sionTotal) {
       if (!isOuter) {
         if (r === 1 && c === 1) {
           html += `<div class="map-inner" style="grid-column:2/span 9;grid-row:2/span 9">
-            <div class="map-inner-title">🚂 동물마을 기차여행</div>
+            ${CENTER_WORDMARK}
             <div class="map-inner-sub">포인트를 모아 한 바퀴 돌면 선물!</div>
             <div class="map-inner-cards">
               <div class="map-icard sih-icard">
                 <span class="mic-emoji">🐰</span>
                 <span class="mic-name">시현이</span>
-                <span class="mic-pt">${mapPts['시현이']}pt</span>
-                <span class="mic-pos">${mapPos(mapPts['시현이'])}번 칸</span>
-                <span class="mic-gift">${mapGift['시현이'] > 0 ? '🎁×' + mapGift['시현이'] : '—'}</span>
+                <span class="mic-pt">${mapPts['시현이']}<small>pt</small></span>
+                <span class="mic-pos">${mapPos(mapPts['시현이'])}번 칸${mapGift['시현이']>0?' · 🎁'+mapGift['시현이']:''}</span>
               </div>
               <div class="map-icard sio-icard">
                 <span class="mic-emoji">🐻</span>
                 <span class="mic-name">시온이</span>
-                <span class="mic-pt">${mapPts['시온이']}pt</span>
-                <span class="mic-pos">${mapPos(mapPts['시온이'])}번 칸</span>
-                <span class="mic-gift">${mapGift['시온이'] > 0 ? '🎁×' + mapGift['시온이'] : '—'}</span>
+                <span class="mic-pt">${mapPts['시온이']}<small>pt</small></span>
+                <span class="mic-pos">${mapPos(mapPts['시온이'])}번 칸${mapGift['시온이']>0?' · 🎁'+mapGift['시온이']:''}</span>
               </div>
-            </div>
-            <div class="map-inner-legend">
-              <span>🏁 0</span><span>🌳 10</span><span>🏰 20</span><span>⛲ 30</span>
             </div>
           </div>`;
         }
@@ -274,35 +224,30 @@ function _buildBoard(sihTotal, sionTotal) {
       }
 
       const sq = gridToSq(r, c);
-      const isLandmark = (sq === 0 || sq === 10 || sq === 20 || sq === 30);
+      const sc = SPECIAL_CELLS[sq];
+      const bp = _badgePos(sq, r, c);
+      const bg = sc ? sc.bg : '#FFFFFF';
+      const cellCls = sc ? 'map-cell special' : 'map-cell';
 
-      // 랜드마크 배경색
-      const bgMap = { 0: '#FFFBEB', 10: '#F0FDF4', 20: '#FAF5FF', 30: '#EFF6FF' };
-      const bg = bgMap[sq] || '#FFFFFF';
-
-      const lmClass = isLandmark ? ' map-lm' : '';
-
-      if (isLandmark) {
-        html += `<div class="map-cell${lmClass}"
-          style="grid-column:${c+1};grid-row:${r+1};background:${bg}"
-          title="${sq}. ${LANDMARK_LABELS[sq]}">
-          ${_getTrackSVG(sq)}
-          <div class="map-lm-icon">${LANDMARK_ICONS[sq]}</div>
-          <div class="map-lm-label">${LANDMARK_LABELS[sq]}</div>
-          <div class="map-num">${sq}</div>
+      let badge = '';
+      if (sc) {
+        badge = `<div class="cell-badge ${bp}">
+          <span class="cb-icon"><svg viewBox="0 0 24 24">${sc.icon}</svg></span>
+          <span class="cb-num" style="color:${sc.color}">${sq}</span>
         </div>`;
       } else {
-        html += `<div class="map-cell"
-          style="grid-column:${c+1};grid-row:${r+1};background:${bg}"
-          title="${sq}번 칸">
-          ${_getTrackSVG(sq)}
-          <div class="map-num">${sq}</div>
-        </div>`;
+        badge = `<div class="cell-badge ${bp}"><span class="cb-num">${sq}</span></div>`;
       }
+
+      html += `<div class="${cellCls}"
+        style="grid-column:${c+1};grid-row:${r+1};background:${bg}"
+        title="${sq}번${sc?' · '+sc.label:''}">
+        ${_getTrackSVG(sq)}
+        ${badge}
+      </div>`;
     }
   }
 
-  // 기차 토큰 오버레이
   const sp_xy = _sqToXY(sp);
   const op_xy = _sqToXY(op);
   const same  = sp === op;

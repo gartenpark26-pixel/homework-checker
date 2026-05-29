@@ -199,9 +199,11 @@ const CENTER_WORDMARK = `<svg class="map-wordmark" viewBox="0 0 260 96" xmlns="h
 </svg>`;
 
 // ===== 보드 렌더링 =====
-function _buildBoard(sihTotal, sionTotal) {
+function _buildBoard(sihTotal, sionTotal, sihGift, sionGift) {
   const sp = mapPos(sihTotal);
   const op = mapPos(sionTotal);
+  sihGift = sihGift || 0;
+  sionGift = sionGift || 0;
   let html = '';
 
   for (let r = 0; r < 11; r++) {
@@ -216,14 +218,14 @@ function _buildBoard(sihTotal, sionTotal) {
               <div class="map-icard sih-icard">
                 <span class="mic-emoji">🐰</span>
                 <span class="mic-name">시현이</span>
-                <span class="mic-pt">${mapPts['시현이']}<small>pt</small></span>
-                <span class="mic-pos">${mapPos(mapPts['시현이'])}번 칸${mapGift['시현이']>0?' · 🎁'+mapGift['시현이']:''}</span>
+                <span class="mic-pt">${sihTotal}<small>pt</small></span>
+                <span class="mic-pos">${mapPos(sihTotal)}번 칸${sihGift>0?' · 🎁'+sihGift:''}</span>
               </div>
               <div class="map-icard sio-icard">
                 <span class="mic-emoji">🐻</span>
                 <span class="mic-name">시온이</span>
-                <span class="mic-pt">${mapPts['시온이']}<small>pt</small></span>
-                <span class="mic-pos">${mapPos(mapPts['시온이'])}번 칸${mapGift['시온이']>0?' · 🎁'+mapGift['시온이']:''}</span>
+                <span class="mic-pt">${sionTotal}<small>pt</small></span>
+                <span class="mic-pos">${mapPos(sionTotal)}번 칸${sionGift>0?' · 🎁'+sionGift:''}</span>
               </div>
             </div>
           </div>`;
@@ -278,7 +280,7 @@ function _buildBoard(sihTotal, sionTotal) {
 function renderChildMap() {
   const board = document.getElementById('map-board');
   if (!board) return;
-  board.innerHTML = _buildBoard(mapPts['시현이'], mapPts['시온이']);
+  board.innerHTML = _buildBoard(mapPts['시현이'], mapPts['시온이'], mapGift['시현이'], mapGift['시온이']);
   const myTotal = mapPts[mapCurrentChild];
   const pos   = mapPos(myTotal);
   const round = Math.floor(myTotal / MAP_TOTAL) + 1;
@@ -293,7 +295,9 @@ function renderParentMapIfVisible() {
   if (!board) return;
   const sihTotal  = (typeof parentPointsData !== 'undefined') ? (parentPointsData['시현이'].total || 0) : 0;
   const sionTotal = (typeof parentPointsData !== 'undefined') ? (parentPointsData['시온이'].total || 0) : 0;
-  board.innerHTML = _buildBoard(sihTotal, sionTotal);
+  const sihGift   = (typeof parentPointsData !== 'undefined') ? (parentPointsData['시현이'].giftCount || 0) : 0;
+  const sionGift  = (typeof parentPointsData !== 'undefined') ? (parentPointsData['시온이'].giftCount || 0) : 0;
+  board.innerHTML = _buildBoard(sihTotal, sionTotal, sihGift, sionGift);
   const info = document.getElementById('parent-map-info');
   if (info) {
     info.innerHTML =
@@ -342,8 +346,10 @@ async function confirmMapWin() {
   const cid     = CHILD_IDS[name];
   const newGift = mapGift[name] + 1;
   try {
+    // 누적 보존: total은 차감하지 않고 선물 개수만 1 증가.
+    // 위치=total%40, 바퀴=floor(total/40)로 계산되며,
+    // 2바퀴 이상 누적분은 스냅샷 재호출 시 _checkMapWin이 한 바퀴씩 다시 지급.
     await db.collection('points').doc(cid).set({
-      total:     firebase.firestore.FieldValue.increment(-MAP_TOTAL),
       giftCount: newGift,
     }, { merge: true });
   } catch (e) { console.error('승리 처리 실패:', e); }

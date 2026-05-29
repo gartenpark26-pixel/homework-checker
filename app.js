@@ -18,7 +18,7 @@ let unsubChecks    = null;
 // ===== 포인트 상태 =====
 let pointsData   = { total: 0, history: [] };
 let unsubPoints  = null;
-let parentPointsData = { '시현이': { total: 0, history: [] }, '시온이': { total: 0, history: [] } };
+let parentPointsData = { '시현이': { total: 0, history: [], giftCount: 0 }, '시온이': { total: 0, history: [], giftCount: 0 } };
 let unsubParentPointsSihyeon = null;
 let unsubParentPointsSion    = null;
 
@@ -137,8 +137,8 @@ function loadParentPoints() {
     const unsub = db.collection('points').doc(childId)
       .onSnapshot(snap => {
         parentPointsData[name] = snap.exists
-          ? { total: snap.data().total || 0, history: snap.data().history || [] }
-          : { total: 0, history: [] };
+          ? { total: snap.data().total || 0, history: snap.data().history || [], giftCount: snap.data().giftCount || 0 }
+          : { total: 0, history: [], giftCount: 0 };
         renderParentPoints();
         // 포인트 변경 시 부모 화면의 기차 맵도 함께 갱신 (점수 라벨과 불일치 방지)
         if (typeof renderParentMapIfVisible === 'function') renderParentMapIfVisible();

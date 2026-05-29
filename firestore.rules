@@ -1,8 +1,58 @@
 rules_version = "2";
+
+// ⚠️ 최소 검증 규칙: 접근(읽기/쓰기)은 여전히 공개입니다.
+// 다만 (1) 알려진 컬렉션만 허용하고, (2) 구조화된 문서는 필드 타입을 가볍게
+// 검증해 잘못된/깨진 데이터가 들어오는 사고를 막습니다. 완전한 보호는 아니며,
+// 강한 보안이 필요하면 Firebase Auth 도입이 별도로 필요합니다.
+// 이 규칙은 Vercel이 아니라 `firebase deploy --only firestore:rules` 로 적용됩니다.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+
+    // ===== 숙제 항목 =====
+    match /homework/{id} {
+      allow read, delete: if true;
+      allow create, update: if
+        (!('child'     in request.resource.data) || request.resource.data.child     is string) &&
+        (!('subject'   in request.resource.data) || request.resource.data.subject   is string) &&
+        (!('title'     in request.resource.data) || request.resource.data.title     is string) &&
+        (!('completed' in request.resource.data) || request.resource.data.completed is bool)   &&
+        (!('date'      in request.resource.data) || request.resource.data.date      is string) &&
+        (!('stars'     in request.resource.data) || request.resource.data.stars     is number);
+    }
+
+    // ===== 반복 숙제 템플릿 (items 리스트) =====
+    match /templates/{child} {
+      allow read, delete: if true;
+      allow create, update: if
+        !('items' in request.resource.data) || request.resource.data.items is list;
+    }
+
+    // ===== 일자별 체크 (동적 키 맵) — 형태가 자유로워 검증 없이 공개 =====
+    match /dailyChecks/{id} {
       allow read, write: if true;
+    }
+
+    // ===== 포인트 =====
+    match /points/{cid} {
+      allow read, delete: if true;
+      allow create, update: if
+        (!('total'     in request.resource.data) || request.resource.data.total     is number) &&
+        (!('giftCount' in request.resource.data) || request.resource.data.giftCount is number) &&
+        (!('history'   in request.resource.data) || request.resource.data.history   is list);
+    }
+
+    // ===== 설정 / PIN — 형태 자유, 공개 유지 =====
+    match /settings/{id} {
+      allow read, write: if true;
+    }
+    match /parentPin/{id} {
+      allow read, write: if true;
+    }
+
+    // ===== 그 외 알 수 없는 경로는 차단 =====
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

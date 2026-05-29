@@ -65,6 +65,17 @@ function formatTime(ts) {
 function nowTimeStr() {
   return new Date().toLocaleTimeString('ko-KR', { hour:'numeric', minute:'2-digit', hour12:true });
 }
+// "오전 9:05" / "오후 9:25" 형식을 0~1439 분 정수로. 파싱 실패 시 -1.
+function krTimeToMinutes(s) {
+  if (!s) return -1;
+  const m = String(s).match(/(오전|오후)\s*(\d{1,2}):(\d{2})/);
+  if (!m) return -1;
+  let h = parseInt(m[2], 10);
+  if (m[1] === '오후' && h !== 12) h += 12;
+  if (m[1] === '오전' && h === 12) h = 0;
+  return h * 60 + parseInt(m[3], 10);
+}
+const POINT_CUTOFF_MIN = 21 * 60 + 30; // 21:30
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
@@ -104,17 +115,16 @@ function renderPoints() {
   el.textContent = `⭐ ${pointsData.total}포인트`;
 }
 
-async function checkAndAwardPoints() {
+async function checkAndAwardPoints(lastDoneStr) {
   if (!profile || viewDate !== todayKey()) return;
-  const now    = new Date();
-  const cutoff = new Date(); cutoff.setHours(21, 30, 0, 0);
-  if (now > cutoff) return;
+  const lastMin = krTimeToMinutes(lastDoneStr);
+  if (lastMin < 0 || lastMin > POINT_CUTOFF_MIN) return;
   if (pointsData.history.some(h => h.date === todayKey())) return;
   const childId = CHILD_IDS[profile];
   try {
     await db.collection('points').doc(childId).set({
       total:   firebase.firestore.FieldValue.increment(1),
-      history: firebase.firestore.FieldValue.arrayUnion({ date: todayKey(), earnedAt: nowTimeStr() }),
+      history: firebase.firestore.FieldValue.arrayUnion({ date: todayKey(), earnedAt: lastDoneStr }),
     }, { merge: true });
   } catch (e) { console.error('포인트 적립 실패:', e); }
 }
@@ -394,7 +404,15 @@ function render() {
   const emptyText = document.getElementById('empty-text');
 
   allDoneEl.classList.toggle('hidden', !(done === total && total > 0));
-  if (done === total && total > 0 && viewDate === todayKey()) checkAndAwardPoints();
+  if (done === total && total > 0 && viewDate === todayKey()) {
+    const times = merged
+      .filter(h => h.completed)
+      .map(h => h.completedTimeStr || (h.completedAt ? formatTime(h.completedAt) : null));
+    if (times.every(t => krTimeToMinutes(t) >= 0)) {
+      const lastDoneStr = times.reduce((a, b) => krTimeToMinutes(b) > krTimeToMinutes(a) ? b : a);
+      checkAndAwardPoints(lastDoneStr);
+    }
+  }
 
   if (visible.length === 0) {
     listEl.innerHTML = '';

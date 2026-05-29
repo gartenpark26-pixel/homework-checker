@@ -140,6 +140,8 @@ function loadParentPoints() {
           ? { total: snap.data().total || 0, history: snap.data().history || [] }
           : { total: 0, history: [] };
         renderParentPoints();
+        // 포인트 변경 시 부모 화면의 기차 맵도 함께 갱신 (점수 라벨과 불일치 방지)
+        if (typeof renderParentMapIfVisible === 'function') renderParentMapIfVisible();
       }, e => console.error(`포인트 로드 실패(${name}):`, e));
     if (name === '시현이') unsubParentPointsSihyeon = unsub;
     else                   unsubParentPointsSion    = unsub;

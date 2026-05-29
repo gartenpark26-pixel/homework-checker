@@ -5,15 +5,23 @@ const MAP_TOTAL = 40;
 // ===== 특별 칸 (부루마블 빈도: 5칸마다 1개) =====
 // 미니멀 라인 아이콘 + 포인트 컬러
 const SPECIAL_CELLS = {
-  0:  { label: '출발',   color: '#F59E0B', bg: '#FFFBEB', icon: '<path d="M6 21V3M6 4h11l-2.4 3.5L17 11H6" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-  5:  { label: '쉼터',   color: '#10B981', bg: '#ECFDF5', icon: '<path d="M12 21v-7M12 14c-4 0-6-3-5-7 4-1 5 3 5 5 0-2 1-6 5-5 1 4-1 7-5 7z" fill="none" stroke="#10B981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-  10: { label: '큰나무', color: '#22C55E', bg: '#F0FDF4', icon: '<path d="M12 21v-4M12 3l6 8h-3l4 5H5l4-5H6z" fill="none" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-  15: { label: '카페',   color: '#F97316', bg: '#FFF7ED', icon: '<path d="M5 8h11v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4zM16 9h3v3a3 3 0 0 1-3 3M7 5c0-1.5 1-1.5 1-3M11 5c0-1.5 1-1.5 1-3" fill="none" stroke="#F97316" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-  20: { label: '동화성', color: '#A855F7', bg: '#FAF5FF', icon: '<path d="M4 21V10l2 1.5L8 9l2 2.5L12 8l2 3.5L16 9l2 2.5L20 10v11zM10 21v-4a2 2 0 0 1 4 0v4" fill="none" stroke="#A855F7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-  25: { label: '놀이터', color: '#EC4899', bg: '#FDF2F8', icon: '<circle cx="12" cy="9" r="6" fill="none" stroke="#EC4899" stroke-width="1.8"/><path d="M10.5 14.5q1.5 2 3 0M12 18v3M10.5 21h3" fill="none" stroke="#EC4899" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-  30: { label: '분수대', color: '#0EA5E9', bg: '#F0F9FF', icon: '<path d="M12 3s-7 8-7 12a7 7 0 0 0 14 0c0-4-7-12-7-12z" fill="none" stroke="#0EA5E9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-  35: { label: '별빛',   color: '#EAB308', bg: '#FEFCE8', icon: '<path d="M12 3l2.4 6.2L21 9.6l-5 4.3L17.6 21 12 17.2 6.4 21 8 13.9 3 9.6l6.6-.4z" fill="none" stroke="#EAB308" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
-};
+  0:  { label: '출발', color: '#F59E0B', bg: '#FFFBEB', icon:
+    '<line x1="6" y1="21" x2="6" y2="3.5" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round"/><path d="M6 4 L17.5 4 L14.5 7.8 L17.5 11.5 L6 11.5 Z" fill="#FCD34D" stroke="#F59E0B" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10.5" cy="7.7" r="1.4" fill="#F59E0B"/>' },
+  5:  { label: '쉼터', color: '#10B981', bg: '#ECFDF5', icon:
+    '<rect x="3.5" y="11" width="17" height="3" rx="1.2" fill="#A7F3D0" stroke="#10B981" stroke-width="1.5"/><path d="M3.5 9 H20.5" stroke="#10B981" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="14" x2="5" y2="20" stroke="#10B981" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="14" x2="19" y2="20" stroke="#10B981" stroke-width="2" stroke-linecap="round"/>' },
+  10: { label: '큰나무', color: '#22C55E', bg: '#F0FDF4', icon:
+    '<path d="M12 3 L18 11 L14.5 11 L19.5 17 L4.5 17 L9.5 11 L6 11 Z" fill="#86EFAC" stroke="#22C55E" stroke-width="1.5" stroke-linejoin="round"/><rect x="10.5" y="17" width="3" height="4" rx="0.5" fill="#A16207"/>' },
+  15: { label: '카페', color: '#F97316', bg: '#FFF7ED', icon:
+    '<path d="M5 9 H16 V14 A4 4 0 0 1 12 18 H9 A4 4 0 0 1 5 14 Z" fill="#FED7AA" stroke="#F97316" stroke-width="1.5" stroke-linejoin="round"/><path d="M16 10 H18.5 A2.2 2.2 0 0 1 18.5 14.4 H16" fill="none" stroke="#F97316" stroke-width="1.5"/><path d="M8 6.5 Q9 5 8 3M11.5 6.5 Q12.5 5 11.5 3" fill="none" stroke="#FB923C" stroke-width="1.3" stroke-linecap="round"/>' },
+  20: { label: '동화성', color: '#A855F7', bg: '#FAF5FF', icon:
+    '<path d="M4 21 V10 H7 V7 H10 V10 H14 V7 H17 V10 H20 V21 Z" fill="#E9D5FF" stroke="#A855F7" stroke-width="1.5" stroke-linejoin="round"/><rect x="10" y="16" width="4" height="5" rx="0.5" fill="#A855F7" fill-opacity="0.45"/><path d="M11 7 V4.5 H13 V7" fill="#C084FC"/><circle cx="12" cy="3.5" r="1" fill="#FCD34D"/>' },
+  25: { label: '놀이터', color: '#EC4899', bg: '#FDF2F8', icon:
+    '<circle cx="9" cy="8" r="4.5" fill="#FBCFE8" stroke="#EC4899" stroke-width="1.5"/><circle cx="15.5" cy="9.5" r="3.5" fill="#F9A8D4" stroke="#EC4899" stroke-width="1.5"/><path d="M9 12.5 Q9.5 16 9 19M15.5 13 Q15 16 15.5 18.5" fill="none" stroke="#EC4899" stroke-width="1.3" stroke-linecap="round"/>' },
+  30: { label: '분수대', color: '#0EA5E9', bg: '#F0F9FF', icon:
+    '<ellipse cx="12" cy="19" rx="8" ry="2.5" fill="#BAE6FD" stroke="#0EA5E9" stroke-width="1.5"/><path d="M12 16.5 V8" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/><path d="M12 8 Q7.5 9 6.5 13.5M12 8 Q16.5 9 17.5 13.5" fill="none" stroke="#7DD3FC" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="6" r="1.6" fill="#38BDF8"/>' },
+  35: { label: '별빛', color: '#EAB308', bg: '#FEFCE8', icon:
+    '<path d="M12 3 L14.3 8.2 L20 8.7 L15.7 12.4 L17 18 L12 14.9 L7 18 L8.3 12.4 L4 8.7 L9.7 8.2 Z" fill="#FEF08A" stroke="#EAB308" stroke-width="1.5" stroke-linejoin="round"/><circle cx="19" cy="5" r="1" fill="#FACC15"/><circle cx="5" cy="6" r="0.8" fill="#FACC15"/>' },
+}
 
 /* ====================================================== */
 /* ===== 아래 선로/기차 토큰 코드는 절대 수정 안 함 ===== */

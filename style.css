@@ -684,6 +684,49 @@ body {
 .pts-hist-row.missed       .pts-hist-badge { color: #CCC; font-weight: 700; }
 .pts-hist-row.today-future .pts-hist-badge { color: var(--theme); }
 
+/* ===== 부모 화면 — 기차 맵 현황 섹션 ===== */
+.parent-map-section {
+  margin: 0.8rem 1rem 0;
+  background: white;
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  overflow: hidden;
+}
+/* 클릭 가능한 헤더 행 (펼치기/접기) */
+.parent-map-title {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 0.85rem 1.1rem;
+  font-size: 1rem; font-weight: 900; color: #888;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: all 0.2s ease;
+}
+.parent-map-title:active { transform: scale(0.99); }
+/* 펼친 상태 → 헤더를 테마 그라데이션으로 강조 (숙제 화면 탭 .active 와 동일 언어) */
+.parent-map-section:has(.parent-map-body:not(.hidden)) .parent-map-title {
+  background: var(--theme-grad);
+  color: white;
+}
+/* 토글 칩 — 필터 칩과 같은 둥근 파스텔 스타일 */
+.parent-map-toggle-btn {
+  flex-shrink: 0;
+  padding: 0.34rem 0.9rem;
+  border: 2px solid #EDE8F8; border-radius: 50px;
+  background: white; color: var(--theme);
+  font-size: 0.82rem; font-weight: 700; font-family: var(--font);
+  cursor: pointer; white-space: nowrap; transition: all 0.2s ease;
+}
+/* 펼친 상태에서는 칩을 반투명 화이트로 (테마 헤더 위 대비) */
+.parent-map-section:has(.parent-map-body:not(.hidden)) .parent-map-toggle-btn {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.65);
+  color: white;
+}
+.parent-map-body { padding: 0.5rem 0.7rem 0.9rem; }
+.parent-map-info {
+  text-align: center; font-size: 0.85rem; font-weight: 700;
+  color: #888; margin: 0.25rem 0 0.5rem;
+}
+
 /* ===== 반응형 ===== */
 @media (min-width: 480px) {
   .profile-cards { gap: 1.5rem; }

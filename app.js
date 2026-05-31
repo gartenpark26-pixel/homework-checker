@@ -8,6 +8,7 @@ let profile        = null;
 let filter         = '전체';
 let newSubj        = '수학';
 let viewDate       = '';
+let viewingToday   = true;   // 사용자가 '오늘'을 보고 있는지 (자정 경과 자동 갱신 판단용)
 let hwData         = [];
 let templateItems  = [];
 let templateChecks = {};
@@ -210,6 +211,7 @@ async function adjustPoints(childName, delta) {
 function selectProfile(name) {
   profile  = name;
   viewDate = todayKey();
+  viewingToday = true;
   const t  = THEMES[name];
   applyTheme(t);
   document.body.style.background = t.bg;
@@ -241,9 +243,27 @@ function navDate(direction) {
   const d = new Date(viewDate + 'T00:00:00');
   d.setDate(d.getDate() + direction);
   viewDate = dateKey(d);
+  viewingToday = (viewDate === todayKey());
   document.getElementById('date-nav-label').textContent = dateLabelShort(viewDate);
   startListening();
 }
+
+// ===== 자정 경과 시 viewDate 자동 갱신 =====
+// 앱을 켜둔 채(백그라운드) 날짜가 바뀌면 viewDate가 어제로 고정돼,
+// 완료 기록이 어제 문서에 저장되고 오늘 화면엔 미완료로 보이는 문제 방지.
+function refreshDateIfStale() {
+  if (!profile || !viewingToday) return;
+  if (document.getElementById('screen-main').classList.contains('hidden')) return;
+  const today = todayKey();
+  if (viewDate === today) return;
+  viewDate = today;
+  document.getElementById('date-nav-label').textContent = dateLabelShort(viewDate);
+  startListening();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshDateIfStale();
+});
+window.addEventListener('focus', refreshDateIfStale);
 
 // ===== Firestore 구독 =====
 function startAllListening() {

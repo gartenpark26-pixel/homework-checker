@@ -15,6 +15,9 @@ let templateChecks = {};
 let unsubFn        = null;
 let unsubTemplate  = null;
 let unsubChecks    = null;
+// 초기 데이터 도착 추적 (로딩 스피너 표시용)
+let _tmplFired = false, _hwFired = false, _checksFired = false;
+const LIST_LOADING_HTML = '<div class="daydetail-loading"><span class="daydetail-spinner"></span>불러오는 중…</div>';
 
 // ===== 포인트 상태 =====
 let pointsData   = { total: 0, history: [] };
@@ -222,6 +225,10 @@ function selectProfile(name) {
   filter = '전체';
   document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
   document.querySelector('.filter-chip[data-subj="전체"]').classList.add('active');
+  // 첫 스냅샷 도착 전(연결 핸드셰이크 구간) 빈 화면 대신 스피너 표시
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('all-done-state').classList.add('hidden');
+  document.getElementById('hw-list').innerHTML = LIST_LOADING_HTML;
   startAllListening();
   loadPoints();
 }
@@ -268,9 +275,11 @@ window.addEventListener('focus', refreshDateIfStale);
 // ===== Firestore 구독 =====
 function startAllListening() {
   if (unsubTemplate) unsubTemplate();
+  _tmplFired = false;
   unsubTemplate = db.collection('templates').doc(profile)
     .onSnapshot(snap => {
       templateItems = snap.exists ? (snap.data().items || []) : [];
+      _tmplFired = true;
       render();
       if (!document.getElementById('screen-template').classList.contains('hidden')) renderTemplate();
     });
@@ -280,6 +289,7 @@ function startAllListening() {
 function startListening() {
   if (unsubFn)     { unsubFn();     unsubFn = null; }
   if (unsubChecks) { unsubChecks(); unsubChecks = null; }
+  _hwFired = false; _checksFired = false;
 
   unsubFn = db.collection('homework')
     .where('child', '==', profile)
@@ -288,12 +298,14 @@ function startListening() {
       hwData = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (a.createdAt?.toMillis()||0) - (b.createdAt?.toMillis()||0));
+      _hwFired = true;
       render();
     }, err => console.error('Firestore 오류:', err));
 
   unsubChecks = db.collection('dailyChecks').doc(`${profile}_${viewDate}`)
     .onSnapshot(snap => {
       templateChecks = snap.exists ? snap.data() : {};
+      _checksFired = true;
       render();
     });
 }
@@ -448,6 +460,12 @@ function render() {
 
   if (visible.length === 0) {
     listEl.innerHTML = '';
+    // 첫 데이터(템플릿/숙제/체크)가 모두 도착하기 전이면 빈 메시지 대신 스피너
+    if (!(_tmplFired && _hwFired && _checksFired)) {
+      emptyEl.classList.add('hidden');
+      listEl.innerHTML = LIST_LOADING_HTML;
+      return;
+    }
     emptyEl.classList.remove('hidden');
     emptyText.innerHTML = total === 0
       ? '숙제가 없어요!<br><small>+ 버튼으로 추가해보세요 🎒</small>'

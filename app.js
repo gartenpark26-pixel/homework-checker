@@ -299,6 +299,8 @@ function loadParentMissions() {
 function renderParentMissions() {
   const listEl = document.getElementById('parent-mission-list');
   if (!listEl) return;
+  const titleEl = document.getElementById('mission-mgmt-title');
+  if (titleEl) titleEl.textContent = `🎯 미션 관리 · ${parentChild === '시현이' ? '🐰' : '🐻'} ${parentChild}`;
   if (parentMissionItems.length === 0) {
     listEl.innerHTML = '<p class="mission-none">등록된 미션이 없어요</p>';
     return;

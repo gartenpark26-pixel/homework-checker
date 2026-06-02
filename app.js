@@ -22,7 +22,7 @@ const LIST_LOADING_HTML = '<div class="daydetail-loading"><span class="daydetail
 // ===== 포인트 상태 =====
 let pointsData   = { total: 0, history: [] };
 let unsubPoints  = null;
-let parentPointsData = { '시현이': { total: 0, history: [], giftCount: 0 }, '시온이': { total: 0, history: [], giftCount: 0 } };
+let parentPointsData = { '시현이': { total: 0, history: [], giftCount: 0, coupons: [] }, '시온이': { total: 0, history: [], giftCount: 0, coupons: [] } };
 let unsubParentPointsSihyeon = null;
 let unsubParentPointsSion    = null;
 
@@ -31,6 +31,10 @@ let missionItems          = [];   // 현재 아이(profile)용
 let unsubMissions         = null;
 let parentMissionItems    = [];   // 부모 화면(parentChild)용
 let unsubParentMissions   = null;
+
+// ===== 쿠폰 상태 =====
+let couponPool      = [];   // 공용 쿠폰 풀
+let unsubCouponPool = null;
 
 // ===== 테마 =====
 const THEMES = {
@@ -157,11 +161,12 @@ function loadParentPoints() {
     const unsub = db.collection('points').doc(childId)
       .onSnapshot(snap => {
         parentPointsData[name] = snap.exists
-          ? { total: snap.data().total || 0, history: snap.data().history || [], giftCount: snap.data().giftCount || 0 }
-          : { total: 0, history: [], giftCount: 0 };
+          ? { total: snap.data().total || 0, history: snap.data().history || [], giftCount: snap.data().giftCount || 0, coupons: snap.data().coupons || [] }
+          : { total: 0, history: [], giftCount: 0, coupons: [] };
         renderParentPoints();
         // 포인트 변경 시 부모 화면의 기차 맵도 함께 갱신 (점수 라벨과 불일치 방지)
         if (typeof renderParentMapIfVisible === 'function') renderParentMapIfVisible();
+        renderEarnedCoupons();
       }, e => console.error(`포인트 로드 실패(${name}):`, e));
     if (name === '시현이') unsubParentPointsSihyeon = unsub;
     else                   unsubParentPointsSion    = unsub;
@@ -365,6 +370,79 @@ async function deleteMission(id) {
   if (!confirm('이 미션을 삭제할까요? 🗑️')) return;
   try { await db.collection('missions').doc(id).delete(); }
   catch (e) { console.error('미션 삭제 실패:', e); }
+}
+
+// ===== 쿠폰 (부모) =====
+function loadCouponPool() {
+  if (unsubCouponPool) { unsubCouponPool(); unsubCouponPool = null; }
+  unsubCouponPool = db.collection('settings').doc('coupons')
+    .onSnapshot(snap => {
+      couponPool = snap.exists ? (snap.data().pool || []) : [];
+      renderCouponPool();
+    }, e => console.error('쿠폰 풀 로드 실패:', e));
+}
+
+function renderCouponPool() {
+  const el = document.getElementById('coupon-pool-list');
+  if (!el) return;
+  if (couponPool.length === 0) {
+    el.innerHTML = '<p class="mission-none">쿠폰을 추가하면 이벤트 칸에서 랜덤 지급돼요</p>';
+    return;
+  }
+  el.innerHTML = couponPool.map((label, i) =>
+    `<span class="coupon-chip">${esc(label)}<button class="coupon-chip-del" onclick="removeCoupon(${i})" aria-label="삭제">×</button></span>`
+  ).join('');
+}
+
+async function addCoupon() {
+  const input = document.getElementById('coupon-input');
+  const label = input.value.trim();
+  if (!label) { input.focus(); return; }
+  input.value = '';
+  try {
+    await db.collection('settings').doc('coupons')
+      .set({ pool: firebase.firestore.FieldValue.arrayUnion(label) }, { merge: true });
+  } catch (e) { console.error('쿠폰 추가 실패:', e); alert('쿠폰 추가에 실패했어요.'); }
+}
+
+async function removeCoupon(index) {
+  const label = couponPool[index];
+  if (label === undefined) return;
+  try {
+    await db.collection('settings').doc('coupons')
+      .set({ pool: firebase.firestore.FieldValue.arrayRemove(label) }, { merge: true });
+  } catch (e) { console.error('쿠폰 삭제 실패:', e); }
+}
+
+function renderEarnedCoupons() {
+  const el = document.getElementById('coupon-earned-list');
+  if (!el) return;
+  const labelEl = document.getElementById('coupon-earned-label');
+  const emoji = parentChild === '시현이' ? '🐰' : '🐻';
+  if (labelEl) labelEl.textContent = `보유 쿠폰 · ${emoji} ${parentChild}`;
+  const coupons = (parentPointsData[parentChild] && parentPointsData[parentChild].coupons) || [];
+  if (coupons.length === 0) {
+    el.innerHTML = '<p class="mission-none">아직 받은 쿠폰이 없어요</p>';
+    return;
+  }
+  el.innerHTML = coupons.map((c, i) =>
+    `<div class="coupon-earned-item">
+      <span class="coupon-earned-txt">🎟️ ${esc(c.label)}</span>
+      <span class="coupon-earned-date">${esc(c.date || '')}</span>
+      <button class="coupon-use-btn" onclick="useCoupon(${i})">사용</button>
+    </div>`
+  ).join('');
+}
+
+async function useCoupon(index) {
+  const coupons = (((parentPointsData[parentChild] || {}).coupons) || []).slice();
+  if (index < 0 || index >= coupons.length) return;
+  const c = coupons[index];
+  if (!confirm(`'${c.label}' 쿠폰을 사용 처리할까요? (목록에서 사라져요)`)) return;
+  coupons.splice(index, 1);
+  try {
+    await db.collection('points').doc(CHILD_IDS[parentChild]).set({ coupons }, { merge: true });
+  } catch (e) { console.error('쿠폰 사용 처리 실패:', e); alert('처리에 실패했어요.'); }
 }
 
 // ===== 프로필 선택 =====
@@ -1002,6 +1080,7 @@ function openParentView() {
   loadCalendarData();
   loadParentPoints();
   loadParentMissions();
+  loadCouponPool();
 }
 function closeParentView() {
   if (unsubParent)             { unsubParent();             unsubParent             = null; }
@@ -1009,6 +1088,7 @@ function closeParentView() {
   if (unsubParentPointsSihyeon){ unsubParentPointsSihyeon();unsubParentPointsSihyeon= null; }
   if (unsubParentPointsSion)   { unsubParentPointsSion();   unsubParentPointsSion   = null; }
   if (unsubParentMissions)     { unsubParentMissions();     unsubParentMissions     = null; }
+  if (unsubCouponPool)         { unsubCouponPool();         unsubCouponPool         = null; }
   document.getElementById('screen-parent').classList.add('hidden');
   document.getElementById('screen-profile').classList.remove('hidden');
 }
@@ -1018,6 +1098,7 @@ function setParentChild(name) {
   loadCalendarData();
   renderParentPoints();
   loadParentMissions();
+  renderEarnedCoupons();
 }
 function updateParentChildTabs() {
   document.querySelectorAll('.parent-child-tab').forEach(b =>

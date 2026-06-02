@@ -806,6 +806,58 @@ body {
 }
 .mission-none { text-align: center; color: #BBB; font-size: 0.85rem; padding: 0.4rem 0; }
 
+/* ===== 맵 이벤트 칸 강조 (Level C) ===== */
+.map-cell.event {
+  box-shadow: 0 0 0 2px #FCD34D, 0 0 10px rgba(250,204,21,0.55) !important;
+  animation: eventPulse 1.6s ease-in-out infinite;
+  z-index: 5 !important;
+}
+@keyframes eventPulse {
+  0%, 100% { box-shadow: 0 0 0 2px #FCD34D, 0 0 8px rgba(250,204,21,0.45) !important; }
+  50%      { box-shadow: 0 0 0 2px #FBBF24, 0 0 16px rgba(250,204,21,0.85) !important; }
+}
+.cell-spark {
+  position: absolute !important; top: 1px; right: 2px;
+  font-size: 9px; z-index: 6 !important; pointer-events: none;
+  animation: sparkTwinkle 1.3s ease-in-out infinite;
+}
+@keyframes sparkTwinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+.mapevent-coupon {
+  color: #7C3AED !important; font-weight: 900 !important;
+  background: #F3EEFF; border-radius: 12px; padding: 0.4rem 0.8rem; display: inline-block;
+}
+
+/* ===== 부모 쿠폰 섹션 ===== */
+.parent-coupon-section {
+  margin: 0.8rem 1rem 0; background: white; border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s); padding: 1rem 1.1rem 1.1rem;
+}
+.coupon-sub-label { font-size: 0.78rem; font-weight: 700; color: #A89BC8; margin: 0.2rem 0 0.4rem; }
+.coupon-pool-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.coupon-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: #F3EEFF; color: #7C5BC0; border: 1px solid #DDD0F8;
+  border-radius: 50px; padding: 0.3rem 0.4rem 0.3rem 0.7rem; font-size: 0.82rem; font-weight: 700;
+}
+.coupon-chip-del {
+  border: none; background: #D8C8F0; color: white; border-radius: 50%;
+  width: 17px; height: 17px; line-height: 17px; font-size: 0.8rem; cursor: pointer; padding: 0; flex-shrink: 0;
+}
+.coupon-earned-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.coupon-earned-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-s); padding: 0.5rem 0.7rem;
+}
+.coupon-earned-txt { flex: 1; min-width: 0; font-size: 0.88rem; font-weight: 700; color: #92700E; word-break: break-all; }
+.coupon-earned-date { font-size: 0.72rem; color: #C0A848; flex-shrink: 0; }
+.coupon-use-btn {
+  flex-shrink: 0; padding: 0.32rem 0.75rem; border: none; border-radius: 50px;
+  background: #F59E0B; color: white; font-size: 0.8rem; font-weight: 900; font-family: var(--font); cursor: pointer;
+}
+
 /* ===== 반응형 ===== */
 @media (min-width: 480px) {
   .profile-cards { gap: 1.5rem; }

@@ -296,6 +296,19 @@
       <div id="parent-mission-list"></div>
     </div>
 
+    <!-- 쿠폰 (부모) -->
+    <div class="parent-coupon-section">
+      <div class="parent-points-title">🎟️ 쿠폰</div>
+      <div class="coupon-sub-label">공용 쿠폰 풀 · 10·20·30칸 도착 시 랜덤 지급</div>
+      <div class="mission-add-row">
+        <input id="coupon-input" class="mission-input" type="text" placeholder="쿠폰 내용 (예: 아이스크림 먹기)" maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter') addCoupon()">
+        <button class="mission-add-btn" onclick="addCoupon()">추가</button>
+      </div>
+      <div id="coupon-pool-list" class="coupon-pool-list"></div>
+      <div class="coupon-sub-label" id="coupon-earned-label" style="margin-top:0.9rem">보유 쿠폰</div>
+      <div id="coupon-earned-list" class="coupon-earned-list"></div>
+    </div>
+
     <div class="pin-reset-section">
       <p class="pin-reset-title">자녀 PIN 초기화</p>
       <div class="pin-reset-btns">
@@ -399,6 +412,16 @@
     <p  class="mapwin-msg"   id="mapwin-msg">동물마을 한 바퀴 완주! 선물을 받았어요 🎁</p>
     <p  class="mapwin-count" id="mapwin-count">누적 선물 1번째 🎁</p>
     <button class="btn-add mapwin-confirm" onclick="confirmMapWin()">확인! 다시 출발! 🚂</button>
+  </div>
+
+  <!-- ===== 맵 이벤트 칸 모달 ===== -->
+  <div id="overlay-mapevent" class="overlay" style="z-index:400"></div>
+  <div id="modal-mapevent" class="modal mapwin-modal" role="dialog" aria-label="이벤트 칸 도착">
+    <div class="mapwin-gift">🎟️</div>
+    <h2 class="mapwin-title" id="mapevent-title">🎉 도착!</h2>
+    <p  class="mapwin-msg"    id="mapevent-msg"></p>
+    <p  class="mapwin-count mapevent-coupon" id="mapevent-coupon"></p>
+    <button class="btn-add mapwin-confirm" onclick="confirmMapEvent()">신난다! 🎉</button>
   </div>
 
   <!-- Firebase SDK -->

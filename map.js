@@ -23,6 +23,9 @@ const SPECIAL_CELLS = {
     '<path d="M12 3 L14.3 8.2 L20 8.7 L15.7 12.4 L17 18 L12 14.9 L7 18 L8.3 12.4 L4 8.7 L9.7 8.2 Z" fill="#FEF08A" stroke="#EAB308" stroke-width="1.5" stroke-linejoin="round"/><circle cx="19" cy="5" r="1" fill="#FACC15"/><circle cx="5" cy="6" r="0.8" fill="#FACC15"/>' },
 }
 
+// ===== 이벤트 칸 (도달 시 축하 + 공용 풀에서 랜덤 쿠폰) =====
+const EVENT_CELLS = [10, 20, 30];
+
 /* ====================================================== */
 /* ===== 아래 선로/기차 토큰 코드는 절대 수정 안 함 ===== */
 /* ====================================================== */
@@ -114,6 +117,8 @@ let unsubMapSih  = null;
 let unsubMapSion = null;
 let mapCurrentChild = null;
 let _mapWinShown    = false;
+const mapEventsClaimed = { '시현이': {}, '시온이': {} };
+let _eventShown = false;
 
 function mapPos(total) { return ((total % MAP_TOTAL) + MAP_TOTAL) % MAP_TOTAL; }
 
@@ -166,8 +171,9 @@ function _startMapSubs() {
       const d = snap.exists ? snap.data() : {};
       mapPts[name]  = d.total     || 0;
       mapGift[name] = d.giftCount || 0;
+      mapEventsClaimed[name] = d.eventsClaimed || {};
       renderChildMap();
-      if (name === mapCurrentChild) _checkMapWin(name);
+      if (name === mapCurrentChild) { _checkMapWin(name); _checkMapEvents(name); }
     });
     if (name === '시현이') unsubMapSih = unsub;
     else                   unsubMapSion = unsub;
@@ -237,7 +243,8 @@ function _buildBoard(sihTotal, sionTotal, sihGift, sionGift) {
       const sc = SPECIAL_CELLS[sq];
       const bp = _badgePos(sq, r, c);
       const bg = sc ? sc.bg : '#FFFFFF';
-      const cellCls = sc ? 'map-cell special' : 'map-cell';
+      const isEvent = EVENT_CELLS.includes(sq);
+      const cellCls = (sc ? 'map-cell special' : 'map-cell') + (isEvent ? ' event' : '');
 
       let badge = '';
       if (sc) {
@@ -251,9 +258,10 @@ function _buildBoard(sihTotal, sionTotal, sihGift, sionGift) {
 
       html += `<div class="${cellCls}"
         style="grid-column:${c+1};grid-row:${r+1};background:${bg}"
-        title="${sq}번${sc?' · '+sc.label:''}">
+        title="${sq}번${sc?' · '+sc.label:''}${isEvent?' · 🎟️ 이벤트 칸':''}">
         ${_getTrackSVG(sq)}
         ${badge}
+        ${isEvent ? '<span class="cell-spark">✨</span>' : ''}
       </div>`;
     }
   }
@@ -355,8 +363,76 @@ async function confirmMapWin() {
   } catch (e) { console.error('승리 처리 실패:', e); }
 }
 
-function _spawnConfetti() {
-  const overlay = document.getElementById('overlay-mapwin');
+// ===== 맵 이벤트 (10/20/30칸 도달 → 축하 + 공용 풀 랜덤 쿠폰) =====
+function _nextUnclaimedEvent(total, claimed) {
+  const maxLap = Math.floor(total / MAP_TOTAL);
+  for (let lap = 0; lap <= maxLap; lap++) {
+    for (const c of EVENT_CELLS) {
+      if (lap * MAP_TOTAL + c > total) continue;
+      const key = `${lap}_${c}`;
+      if (!claimed[key]) return { cell: c, key };
+    }
+  }
+  return null;
+}
+
+async function _checkMapEvents(name) {
+  if (_eventShown || _mapWinShown) return;
+  if (name !== mapCurrentChild) return;
+  const total = mapPts[name] || 0;
+  const next  = _nextUnclaimedEvent(total, mapEventsClaimed[name] || {});
+  if (!next) return;
+  _eventShown = true;
+  const pRef    = db.collection('points').doc(CHILD_IDS[name]);
+  const poolRef = db.collection('settings').doc('coupons');
+  let drawn = null, alreadyDone = false;
+  try {
+    // 트랜잭션: 서버에서 청구 여부 재확인 후 랜덤 추첨 (중복 지급 방지, 다기기 안전)
+    await db.runTransaction(async tx => {
+      const pSnap    = await tx.get(pRef);
+      const poolSnap = await tx.get(poolRef);
+      const pdata    = pSnap.exists ? pSnap.data() : {};
+      const claimedNow = pdata.eventsClaimed || {};
+      if (claimedNow[next.key]) { alreadyDone = true; return; }
+      const pool    = poolSnap.exists ? (poolSnap.data().pool || []) : [];
+      const coupons = pdata.coupons || [];
+      if (pool.length > 0) {
+        drawn = pool[Math.floor(Math.random() * pool.length)];
+        coupons.push({ label: drawn, date: todayKey(), cell: next.cell });
+      }
+      tx.set(pRef, { coupons, eventsClaimed: { ...claimedNow, [next.key]: true } }, { merge: true });
+    });
+  } catch (e) { console.error('맵 이벤트 처리 실패:', e); _eventShown = false; return; }
+  if (alreadyDone) { _eventShown = false; return; }
+  _showMapEvent(next.cell, drawn);
+}
+
+function _showMapEvent(cell, couponLabel) {
+  const sc = SPECIAL_CELLS[cell];
+  const place = sc ? sc.label : (cell + '번 칸');
+  const titleEl = document.getElementById('mapevent-title');
+  const msgEl   = document.getElementById('mapevent-msg');
+  const couEl   = document.getElementById('mapevent-coupon');
+  if (titleEl) titleEl.textContent = `🎉 ${place} 도착!`;
+  if (msgEl)   msgEl.textContent   = `${cell}번 칸 이벤트에 도착했어요!`;
+  if (couEl) {
+    if (couponLabel) { couEl.textContent = `🎟️ '${couponLabel}' 쿠폰 획득!`; couEl.classList.remove('hidden'); }
+    else             { couEl.classList.add('hidden'); }
+  }
+  _spawnConfetti('overlay-mapevent');
+  document.getElementById('overlay-mapevent').classList.add('on');
+  document.getElementById('modal-mapevent').classList.add('on');
+}
+
+function confirmMapEvent() {
+  document.getElementById('overlay-mapevent').classList.remove('on');
+  document.getElementById('modal-mapevent').classList.remove('on');
+  _eventShown = false;
+  if (mapCurrentChild) _checkMapEvents(mapCurrentChild); // 다음 이벤트가 또 있으면 이어서
+}
+
+function _spawnConfetti(overlayId = 'overlay-mapwin') {
+  const overlay = document.getElementById(overlayId);
   if (!overlay) return;
   overlay.querySelectorAll('.confetti-piece').forEach(el => el.remove());
   const pieces = ['🎊','🎉','⭐','🌟','✨','🎈','💫','🎁','🌸','🏆'];

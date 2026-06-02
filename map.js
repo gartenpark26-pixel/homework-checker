@@ -113,6 +113,7 @@ function _trainToken(x, y, emoji, color, strokeColor, name) {
 
 const mapPts  = { '시현이': 0, '시온이': 0 };
 const mapGift = { '시현이': 0, '시온이': 0 };
+const mapCoupons = { '시현이': [], '시온이': [] };
 let unsubMapSih  = null;
 let unsubMapSion = null;
 let mapCurrentChild = null;
@@ -171,6 +172,7 @@ function _startMapSubs() {
       const d = snap.exists ? snap.data() : {};
       mapPts[name]  = d.total     || 0;
       mapGift[name] = d.giftCount || 0;
+      mapCoupons[name] = d.coupons || [];
       mapEventsClaimed[name] = d.eventsClaimed || {};
       renderChildMap();
       if (name === mapCurrentChild) { _checkMapWin(name); _checkMapEvents(name); }
@@ -294,6 +296,25 @@ function renderChildMap() {
   const round = Math.floor(myTotal / MAP_TOTAL) + 1;
   const el = document.getElementById('map-pts-label');
   if (el) el.textContent = `⭐ ${myTotal}포인트 · ${pos}번 칸 · ${round}바퀴째`;
+  renderMyCoupons();
+}
+
+// 내 쿠폰 (읽기 전용 지갑) — 사용/삭제는 부모 탭에서만
+function renderMyCoupons() {
+  const el = document.getElementById('my-coupon-list');
+  if (!el) return;
+  const coupons = mapCoupons[mapCurrentChild] || [];
+  if (coupons.length === 0) {
+    el.innerHTML = '<p class="my-coupon-empty">아직 모은 쿠폰이 없어요<br>10·20·30칸에 도착하면 받아요! 🎟️</p>';
+    return;
+  }
+  el.innerHTML = coupons.slice().reverse().map(c =>
+    `<div class="my-coupon-ticket">
+      <span class="ticket-emoji">🎟️</span>
+      <span class="ticket-label">${esc(c.label)}</span>
+      <span class="ticket-date">${esc(c.date || '')}</span>
+    </div>`
+  ).join('');
 }
 
 function renderParentMapIfVisible() {

@@ -100,6 +100,7 @@
       </div>
       <div class="header-right">
         <button class="tmpl-btn" onclick="openTemplate()" aria-label="반복 숙제 템플릿">📋</button>
+        <button class="map-btn mission-hdr-btn" onclick="openMissionScreen()" aria-label="미션">🎯<span id="mission-badge" class="mission-badge hidden">0</span></button>
         <button class="map-btn"  onclick="openMapScreen()" aria-label="기차 맵">🗺️</button>
       </div>
     </header>
@@ -171,6 +172,23 @@
       <p>반복 숙제가 없어요!<br><small>+ 버튼으로 추가해보세요</small></p>
     </div>
     <button id="fab-tmpl" class="fab" onclick="openTmplModal()" aria-label="반복 숙제 추가">＋</button>
+  </div>
+
+  <!-- ===== 미션 화면 ===== -->
+  <div id="screen-mission" class="hidden">
+    <header id="mission-header">
+      <button class="back-btn" onclick="closeMissionScreen()">‹ 뒤로</button>
+      <div class="header-center"><span>🎯 미션</span></div>
+      <div class="header-right"></div>
+    </header>
+    <div class="tmpl-desc-box">
+      <p>미션을 완료하고 부모님 승인을 받으면<br><small>포인트를 추가로 받아요 ✨</small></p>
+    </div>
+    <div id="mission-list"></div>
+    <div id="mission-empty" class="state-box hidden">
+      <div class="state-icon">🎯</div>
+      <p>아직 미션이 없어요!<br><small>부모님이 미션을 만들어 주실 거예요</small></p>
+    </div>
   </div>
 
   <!-- ===== 기차 맵 화면 ===== -->
@@ -260,6 +278,22 @@
           <div id="parent-map-board" class="map-board"></div>
         </div>
       </div>
+    </div>
+
+    <!-- 미션 관리 (부모) -->
+    <div class="parent-mission-section">
+      <div class="parent-points-title">🎯 미션 관리</div>
+      <div class="mission-add-row">
+        <input id="mission-input" class="mission-input" type="text" placeholder="미션 내용 (예: 방 정리하기)" maxlength="40" autocomplete="off" onkeydown="if(event.key==='Enter') addMission()">
+        <select id="mission-reward" class="mission-reward-sel" aria-label="보상 포인트">
+          <option value="1">⭐1</option>
+          <option value="2">⭐2</option>
+          <option value="3" selected>⭐3</option>
+          <option value="5">⭐5</option>
+        </select>
+        <button class="mission-add-btn" onclick="addMission()">추가</button>
+      </div>
+      <div id="parent-mission-list"></div>
     </div>
 
     <div class="pin-reset-section">

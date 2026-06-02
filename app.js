@@ -26,6 +26,12 @@ let parentPointsData = { '시현이': { total: 0, history: [], giftCount: 0 }, '
 let unsubParentPointsSihyeon = null;
 let unsubParentPointsSion    = null;
 
+// ===== 미션 상태 =====
+let missionItems          = [];   // 현재 아이(profile)용
+let unsubMissions         = null;
+let parentMissionItems    = [];   // 부모 화면(parentChild)용
+let unsubParentMissions   = null;
+
 // ===== 테마 =====
 const THEMES = {
   '시현이': {
@@ -210,6 +216,155 @@ async function adjustPoints(childName, delta) {
   } catch (e) { console.error('포인트 조정 실패:', e); }
 }
 
+// ===== 미션 (아이) =====
+function loadMissions() {
+  if (unsubMissions) { unsubMissions(); unsubMissions = null; }
+  unsubMissions = db.collection('missions').where('child', '==', profile)
+    .onSnapshot(snap => {
+      missionItems = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.createdAt?.toMillis()||0) - (b.createdAt?.toMillis()||0));
+      updateMissionBadge();
+      if (!document.getElementById('screen-mission').classList.contains('hidden')) renderMissions();
+    }, e => console.error('미션 로드 실패:', e));
+}
+
+function updateMissionBadge() {
+  const badge = document.getElementById('mission-badge');
+  if (!badge) return;
+  const n = missionItems.filter(m => m.status === 'active').length;
+  badge.textContent = n;
+  badge.classList.toggle('hidden', n === 0);
+}
+
+function openMissionScreen() {
+  document.getElementById('screen-main').classList.add('hidden');
+  document.getElementById('screen-mission').classList.remove('hidden');
+  renderMissions();
+}
+function closeMissionScreen() {
+  document.getElementById('screen-mission').classList.add('hidden');
+  document.getElementById('screen-main').classList.remove('hidden');
+}
+
+function renderMissions() {
+  const listEl  = document.getElementById('mission-list');
+  const emptyEl = document.getElementById('mission-empty');
+  if (!listEl) return;
+  const visible = missionItems.filter(m => m.status === 'active' || m.status === 'pending');
+  if (visible.length === 0) {
+    listEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+  listEl.innerHTML = visible.map(m => {
+    const reward = m.reward || 1;
+    const right = m.status === 'pending'
+      ? `<span class="mission-pending">승인 대기 중 ⏳</span>`
+      : `<button class="mission-done-btn" onclick="completeMission('${m.id}')">완료</button>`;
+    return `
+      <div class="mission-item${m.status === 'pending' ? ' pending' : ''}">
+        <div class="mission-body">
+          <div class="mission-title">${esc(m.title)}</div>
+          <div class="mission-reward">⭐ ${reward}포인트</div>
+        </div>
+        ${right}
+      </div>`;
+  }).join('');
+}
+
+async function completeMission(id) {
+  try {
+    await db.collection('missions').doc(id).update({
+      status: 'pending',
+      completedAt:      firebase.firestore.FieldValue.serverTimestamp(),
+      completedTimeStr: nowTimeStr(),
+    });
+  } catch (e) { console.error('미션 완료 처리 실패:', e); }
+}
+
+// ===== 미션 (부모) =====
+function loadParentMissions() {
+  if (unsubParentMissions) { unsubParentMissions(); unsubParentMissions = null; }
+  unsubParentMissions = db.collection('missions').where('child', '==', parentChild)
+    .onSnapshot(snap => {
+      parentMissionItems = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.createdAt?.toMillis()||0) - (b.createdAt?.toMillis()||0));
+      renderParentMissions();
+    }, e => console.error('미션 로드 실패(부모):', e));
+}
+
+function renderParentMissions() {
+  const listEl = document.getElementById('parent-mission-list');
+  if (!listEl) return;
+  if (parentMissionItems.length === 0) {
+    listEl.innerHTML = '<p class="mission-none">등록된 미션이 없어요</p>';
+    return;
+  }
+  const order = { pending: 0, active: 1, done: 2 };
+  const sorted = [...parentMissionItems].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  listEl.innerHTML = sorted.map(m => {
+    const reward = m.reward || 1;
+    let right;
+    if (m.status === 'pending')   right = `<button class="mission-approve-btn" onclick="approveMission('${m.id}')">승인 ✓</button>`;
+    else if (m.status === 'done') right = `<span class="mission-status done">완료됨</span>`;
+    else                          right = `<span class="mission-status active">진행 중</span>`;
+    return `
+      <div class="parent-mission-item status-${m.status}">
+        <div class="mission-body">
+          <div class="mission-title">${esc(m.title)}</div>
+          <div class="mission-reward">⭐ ${reward}</div>
+        </div>
+        ${right}
+        <button class="mission-del-btn" onclick="deleteMission('${m.id}')" aria-label="삭제">🗑️</button>
+      </div>`;
+  }).join('');
+}
+
+async function addMission() {
+  const input = document.getElementById('mission-input');
+  const title = input.value.trim();
+  if (!title) { input.focus(); return; }
+  const reward = parseInt(document.getElementById('mission-reward').value, 10) || 1;
+  input.value = '';
+  try {
+    await db.collection('missions').add({
+      child: parentChild, title, reward, status: 'active',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) { console.error('미션 추가 실패:', e); alert('미션 추가에 실패했어요.'); }
+}
+
+async function approveMission(id) {
+  const missionRef = db.collection('missions').doc(id);
+  try {
+    // 트랜잭션: 미션 승인 + 포인트 적립을 원자적으로 (중복 적립 방지)
+    await db.runTransaction(async tx => {
+      const mSnap = await tx.get(missionRef);
+      if (!mSnap.exists) return;
+      const m = mSnap.data();
+      if (m.status === 'done') return; // 이미 승인됨
+      const reward  = m.reward || 1;
+      const pRef    = db.collection('points').doc(CHILD_IDS[m.child]);
+      const pSnap   = await tx.get(pRef);
+      const total   = pSnap.exists ? (pSnap.data().total || 0) : 0;
+      tx.set(pRef, { total: total + reward }, { merge: true });
+      tx.update(missionRef, {
+        status: 'done',
+        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+  } catch (e) { console.error('미션 승인 실패:', e); alert('승인 처리에 실패했어요.'); }
+}
+
+async function deleteMission(id) {
+  if (!confirm('이 미션을 삭제할까요? 🗑️')) return;
+  try { await db.collection('missions').doc(id).delete(); }
+  catch (e) { console.error('미션 삭제 실패:', e); }
+}
+
 // ===== 프로필 선택 =====
 function selectProfile(name) {
   profile  = name;
@@ -231,6 +386,7 @@ function selectProfile(name) {
   document.getElementById('hw-list').innerHTML = LIST_LOADING_HTML;
   startAllListening();
   loadPoints();
+  loadMissions();
 }
 
 function goBack() {
@@ -238,10 +394,12 @@ function goBack() {
   if (unsubTemplate) { unsubTemplate(); unsubTemplate = null; }
   if (unsubChecks)   { unsubChecks();   unsubChecks = null; }
   if (unsubPoints)   { unsubPoints();   unsubPoints = null; }
-  profile = null; hwData = []; templateItems = []; templateChecks = {}; pointsData = { total: 0, history: [] };
+  if (unsubMissions) { unsubMissions(); unsubMissions = null; }
+  profile = null; hwData = []; templateItems = []; templateChecks = {}; pointsData = { total: 0, history: [] }; missionItems = [];
   document.body.style.background = '';
   document.getElementById('screen-main').classList.add('hidden');
   document.getElementById('screen-template').classList.add('hidden');
+  document.getElementById('screen-mission').classList.add('hidden');
   document.getElementById('screen-profile').classList.remove('hidden');
 }
 
@@ -841,12 +999,14 @@ function openParentView() {
   updateParentChildTabs();
   loadCalendarData();
   loadParentPoints();
+  loadParentMissions();
 }
 function closeParentView() {
   if (unsubParent)             { unsubParent();             unsubParent             = null; }
   if (unsubChecksParent)       { unsubChecksParent();       unsubChecksParent       = null; }
   if (unsubParentPointsSihyeon){ unsubParentPointsSihyeon();unsubParentPointsSihyeon= null; }
   if (unsubParentPointsSion)   { unsubParentPointsSion();   unsubParentPointsSion   = null; }
+  if (unsubParentMissions)     { unsubParentMissions();     unsubParentMissions     = null; }
   document.getElementById('screen-parent').classList.add('hidden');
   document.getElementById('screen-profile').classList.remove('hidden');
 }
@@ -855,6 +1015,7 @@ function setParentChild(name) {
   updateParentChildTabs();
   loadCalendarData();
   renderParentPoints();
+  loadParentMissions();
 }
 function updateParentChildTabs() {
   document.querySelectorAll('.parent-child-tab').forEach(b =>

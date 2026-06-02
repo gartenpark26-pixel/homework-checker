@@ -727,6 +727,85 @@ body {
   color: #888; margin: 0.25rem 0 0.5rem;
 }
 
+/* ===== 미션 ===== */
+.mission-hdr-btn { position: relative; }
+.mission-badge {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 9px; background: #FF6B6B; color: white;
+  font-size: 0.7rem; font-weight: 900; line-height: 18px; text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+/* 아이 미션 화면 */
+#screen-mission {
+  min-height: 100dvh; background: var(--theme-bg);
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+}
+#mission-header {
+  background: var(--theme-grad);
+  padding: calc(0.9rem + env(safe-area-inset-top)) 1.2rem 1rem;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.5rem;
+  position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+}
+#mission-list { padding: 0.6rem 1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.mission-item {
+  display: flex; align-items: center; gap: 0.8rem;
+  background: white; border-radius: var(--radius-m); box-shadow: var(--shadow-s);
+  padding: 0.9rem 1rem;
+}
+.mission-item.pending { opacity: 0.65; }
+.mission-body { flex: 1; min-width: 0; }
+.mission-title { font-size: 1.05rem; font-weight: 700; color: #555; word-break: break-all; }
+.mission-reward { font-size: 0.85rem; font-weight: 900; color: var(--theme); margin-top: 0.2rem; }
+.mission-done-btn {
+  flex-shrink: 0; padding: 0.5rem 1.1rem; border: none; border-radius: 50px;
+  background: var(--theme-grad); color: white; font-size: 0.95rem; font-weight: 900;
+  font-family: var(--font); cursor: pointer; box-shadow: var(--shadow-s);
+}
+.mission-done-btn:active { transform: scale(0.94); }
+.mission-pending { flex-shrink: 0; font-size: 0.85rem; font-weight: 900; color: #F0A500; }
+
+/* 부모 미션 관리 */
+.parent-mission-section {
+  margin: 0.8rem 1rem 0; background: white; border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s); padding: 1rem 1.1rem 1.1rem;
+}
+.mission-add-row { display: flex; gap: 0.4rem; margin: 0.5rem 0 0.8rem; }
+.mission-input {
+  flex: 1; min-width: 0; padding: 0.55rem 0.8rem; border: 2px solid #EDE8F8;
+  border-radius: var(--radius-s); font-family: var(--font); font-size: 0.9rem; color: #555;
+}
+.mission-input:focus { outline: none; border-color: var(--theme); }
+.mission-reward-sel {
+  flex-shrink: 0; padding: 0.55rem 0.4rem; border: 2px solid #EDE8F8;
+  border-radius: var(--radius-s); font-family: var(--font); font-size: 0.85rem; color: #555; background: white;
+}
+.mission-add-btn {
+  flex-shrink: 0; padding: 0.55rem 0.9rem; border: none; border-radius: var(--radius-s);
+  background: var(--theme); color: white; font-weight: 900; font-family: var(--font); cursor: pointer;
+}
+.parent-mission-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 0.2rem; border-bottom: 1px solid #F5F0FA;
+}
+.parent-mission-item:last-child { border-bottom: none; }
+.parent-mission-item .mission-title { font-size: 0.92rem; font-weight: 700; color: #666; }
+.parent-mission-item .mission-reward { font-size: 0.8rem; margin-top: 0.1rem; }
+.parent-mission-item.status-done { opacity: 0.5; }
+.mission-approve-btn {
+  flex-shrink: 0; padding: 0.4rem 0.85rem; border: none; border-radius: 50px;
+  background: #22C55E; color: white; font-size: 0.85rem; font-weight: 900;
+  font-family: var(--font); cursor: pointer;
+}
+.mission-status { flex-shrink: 0; font-size: 0.78rem; font-weight: 900; }
+.mission-status.active { color: #A0A0C0; }
+.mission-status.done   { color: #A8D8A8; }
+.mission-del-btn {
+  flex-shrink: 0; background: none; border: none; cursor: pointer; font-size: 0.95rem; opacity: 0.55;
+}
+.mission-none { text-align: center; color: #BBB; font-size: 0.85rem; padding: 0.4rem 0; }
+
 /* ===== 반응형 ===== */
 @media (min-width: 480px) {
   .profile-cards { gap: 1.5rem; }

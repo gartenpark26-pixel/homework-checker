@@ -42,7 +42,17 @@ service cloud.firestore {
         (!('history'   in request.resource.data) || request.resource.data.history   is list);
     }
 
-    // ===== 설정 / PIN — 형태 자유, 공개 유지 =====
+    // ===== 미션 (부모 생성 → 아이 완료 → 부모 승인) =====
+    match /missions/{id} {
+      allow read, delete: if true;
+      allow create, update: if
+        (!('child'  in request.resource.data) || request.resource.data.child  is string) &&
+        (!('title'  in request.resource.data) || request.resource.data.title  is string) &&
+        (!('reward' in request.resource.data) || request.resource.data.reward is number) &&
+        (!('status' in request.resource.data) || request.resource.data.status is string);
+    }
+
+    // ===== 설정 / PIN / 쿠폰 풀 — 형태 자유, 공개 유지 =====
     match /settings/{id} {
       allow read, write: if true;
     }

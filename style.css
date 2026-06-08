@@ -886,9 +886,10 @@ body {
   padding: 1.8rem 1.6rem 1.6rem; border-radius: 28px;
   text-align: center; z-index: 500;
   transform: translate(-50%, -50%) scale(0.85); opacity: 0;
+  pointer-events: none;   /* 닫힘(투명) 상태에서 클릭 가로채지 않도록 — PIN/프로필 클릭 막힘 수정 */
   transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
 }
-.mapwin-modal.on { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+.mapwin-modal.on { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
 .mapwin-gift { font-size: 3.2rem; line-height: 1; margin-bottom: 0.6rem; animation: giftPop 0.5s ease; }
 @keyframes giftPop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
 .mapwin-title { font-size: 1.4rem; font-weight: 900; color: #2A2A2A; margin-bottom: 0.5rem; }

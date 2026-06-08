@@ -878,6 +878,36 @@ body {
   line-height: 1.7; padding: 1rem 0;
 }
 
+/* ===== 맵 축하/이벤트 모달 (.mapwin-modal) — 누락 복원 ===== */
+/* 핵심: z-index를 오버레이(400)보다 높여 확인 버튼이 클릭되게 함 (정지 버그 수정) */
+.mapwin-modal {
+  top: 50%; bottom: auto; left: 50%; right: auto;
+  width: calc(100% - 3rem); max-width: 360px;
+  padding: 1.8rem 1.6rem 1.6rem; border-radius: 28px;
+  text-align: center; z-index: 500;
+  transform: translate(-50%, -50%) scale(0.85); opacity: 0;
+  transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
+}
+.mapwin-modal.on { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+.mapwin-gift { font-size: 3.2rem; line-height: 1; margin-bottom: 0.6rem; animation: giftPop 0.5s ease; }
+@keyframes giftPop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.mapwin-title { font-size: 1.4rem; font-weight: 900; color: #2A2A2A; margin-bottom: 0.5rem; }
+.mapwin-msg   { font-size: 1rem;  font-weight: 700; color: #777; line-height: 1.5; margin-bottom: 0.5rem; }
+.mapwin-count { font-size: 0.95rem; font-weight: 900; color: var(--theme); margin-bottom: 1.1rem; }
+.mapwin-confirm { width: 100%; margin-top: 0.3rem; }
+
+/* ===== 폭죽 (.confetti-piece) — 누락 복원: 전체 화면 낙하, 클릭 통과 ===== */
+.confetti-piece {
+  position: fixed; top: -10vh; z-index: 480;
+  pointer-events: none; user-select: none;
+  animation: confettiFall 2.6s linear forwards;
+  will-change: transform, top;
+}
+@keyframes confettiFall {
+  0%   { top: -10vh;  transform: translateX(0)    rotate(0deg);   opacity: 1; }
+  100% { top: 110vh;  transform: translateX(40px) rotate(540deg); opacity: 0.9; }
+}
+
 /* ===== 반응형 ===== */
 @media (min-width: 480px) {
   .profile-cards { gap: 1.5rem; }

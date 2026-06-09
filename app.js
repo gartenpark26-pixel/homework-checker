@@ -1136,12 +1136,14 @@ function loadMonthChecks() {
   monthChecksPromise = new Promise(resolve => {
     db.collection('templates').doc(child).get().then(tmplSnap => {
       if (calYear !== yr || calMonth !== mo || parentChild !== child) { if (!resolved) { resolved = true; resolve(); } return; }
-      parentTmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
+      // 템플릿 목록은 체크 데이터와 '함께' 반영해야 함 (목록만 있고 체크는 빈 중간 렌더 → 완료를 미완료로 오표시하는 혼선 방지)
+      const tmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
       unsubChecksParent = db.collection('dailyChecks')
         .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
         .where(firebase.firestore.FieldPath.documentId(), '<',  `${child}_${nextMm}-01`)
         .onSnapshot(checksSnap => {
           if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
+          parentTmplItems = tmplItems;
           parentChecksCache = {};
           checksSnap.docs.forEach(d => {
             parentChecksCache[d.id.slice(child.length + 1)] = d.data();

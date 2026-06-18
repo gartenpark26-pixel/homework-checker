@@ -578,8 +578,9 @@ async function deleteDayDetailHw(id, dateStr) {
   if (!confirm('정말 삭제할까요? 🗑️')) return;
   try {
     await db.collection('homework').doc(id).delete();
-    if (parentHwCache[dateStr]) {
-      parentHwCache[dateStr] = parentHwCache[dateStr].filter(h => h.id !== id);
+    const hwC = parentHwCache[parentChild];
+    if (hwC && hwC[dateStr]) {
+      hwC[dateStr] = hwC[dateStr].filter(h => h.id !== id);
     }
     openDayDetail(dateStr);
   } catch (e) { console.error(e); alert('삭제에 실패했어요.'); }
@@ -590,8 +591,9 @@ async function hideTmplForDayParent(id, dateStr) {
   try {
     await db.collection('dailyChecks').doc(`${parentChild}_${dateStr}`)
       .set({ [`hidden_${id}`]: true }, { merge: true });
-    if (!parentChecksCache[dateStr]) parentChecksCache[dateStr] = {};
-    parentChecksCache[dateStr][`hidden_${id}`] = true;
+    if (!parentChecksCache[parentChild]) parentChecksCache[parentChild] = {};
+    if (!parentChecksCache[parentChild][dateStr]) parentChecksCache[parentChild][dateStr] = {};
+    parentChecksCache[parentChild][dateStr][`hidden_${id}`] = true;
     openDayDetail(dateStr);
   } catch (e) { console.error(e); alert('처리에 실패했어요.'); }
 }
@@ -658,7 +660,7 @@ function render() {
   const merged = [
     ...hwData.map(h => ({ ...h, itemType: 'manual' })),
     ...templateItems
-      .filter(t => !templateChecks[`hidden_${t.id}`] && !(isWeekend && t.weekendSkip))
+      .filter(t => !templateChecks[`hidden_${t.id}`] && !(isWeekend && t.weekendSkip) && !(t.archived && viewDate >= t.archivedDate))
       .map(t => ({
         id: t.id, itemType: 'template',
         subject: t.subject, title: t.title,
@@ -799,9 +801,10 @@ function closeTemplate() {
 function renderTemplate() {
   const listEl  = document.getElementById('tmpl-list');
   const emptyEl = document.getElementById('tmpl-empty');
-  if (templateItems.length === 0) { listEl.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
+  const active  = templateItems.filter(t => !t.archived);   // 비활성화 항목은 관리 목록에서 숨김(기록은 보존)
+  if (active.length === 0) { listEl.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
   emptyEl.classList.add('hidden');
-  listEl.innerHTML = templateItems.map((t, idx) => `
+  listEl.innerHTML = active.map((t, idx) => `
     <div class="hw-item" id="tmpl-item-${t.id}">
       <span class="tmpl-order">${idx + 1}</span>
       <div class="hw-body">
@@ -822,8 +825,13 @@ function toggleWeekendSkip(id) {
     .catch(e => console.error(e));
 }
 async function deleteTmplItem(id) {
-  if (!confirm('이 반복 숙제를 삭제할까요? 🗑️')) return;
-  try { await db.collection('templates').doc(profile).set({ items: templateItems.filter(t => t.id !== id) }); }
+  if (!confirm('이 반복 숙제를 삭제할까요? 🗑️\n(오늘부터 표시 안 되고, 과거 완료 기록은 그대로 보존돼요)')) return;
+  // 완전 삭제 대신 비활성화(archived): 과거 날짜 완료 기록을 보존하기 위함
+  try {
+    await db.collection('templates').doc(profile).set({
+      items: templateItems.map(t => t.id === id ? { ...t, archived: true, archivedDate: todayKey() } : t)
+    });
+  }
   catch (e) { console.error(e); alert('삭제에 실패했어요.'); }
 }
 
@@ -1063,11 +1071,13 @@ function preloadChildPins() {
 let parentChild   = '시현이';
 let calYear       = 0;
 let calMonth      = 0;
-let parentHwCache      = {};
-let unsubParent        = null;
-let unsubChecksParent  = null;
-let parentTmplItems    = [];
-let parentChecksCache  = {};
+const PARENT_CHILDREN  = ['시현이', '시온이'];
+// 부모 화면은 두 아이 데이터를 모두 미리 구독해 캐시에 보관 → 탭 전환은 재렌더만(재조회 X)
+let parentHwCache      = { '시현이': {}, '시온이': {} };  // child → { date: [hw] }
+let parentTmplCache    = { '시현이': [], '시온이': [] };  // child → items[]
+let parentChecksCache  = { '시현이': {}, '시온이': {} };  // child → { date: checks }
+const unsubHwBoth      = { '시현이': null, '시온이': null };
+const unsubChecksBoth  = { '시현이': null, '시온이': null };
 let monthChecksPromise = Promise.resolve();
 
 function openParentView() {
@@ -1083,8 +1093,10 @@ function openParentView() {
   loadCouponPool();
 }
 function closeParentView() {
-  if (unsubParent)             { unsubParent();             unsubParent             = null; }
-  if (unsubChecksParent)       { unsubChecksParent();       unsubChecksParent       = null; }
+  PARENT_CHILDREN.forEach(n => {
+    if (unsubHwBoth[n])     { unsubHwBoth[n]();     unsubHwBoth[n]     = null; }
+    if (unsubChecksBoth[n]) { unsubChecksBoth[n](); unsubChecksBoth[n] = null; }
+  });
   if (unsubParentPointsSihyeon){ unsubParentPointsSihyeon();unsubParentPointsSihyeon= null; }
   if (unsubParentPointsSion)   { unsubParentPointsSion();   unsubParentPointsSion   = null; }
   if (unsubParentMissions)     { unsubParentMissions();     unsubParentMissions     = null; }
@@ -1095,7 +1107,7 @@ function closeParentView() {
 function setParentChild(name) {
   parentChild = name;
   updateParentChildTabs();
-  loadCalendarData();
+  renderCalendar();        // 이미 미리 로딩된 캐시로 즉시 표시 (재구독·재조회 안 함)
   renderParentPoints();
   loadParentMissions();
   renderEarnedCoupons();
@@ -1107,51 +1119,57 @@ function updateParentChildTabs() {
 }
 
 function loadCalendarData() {
-  if (unsubParent)       { unsubParent();       unsubParent       = null; }
-  if (unsubChecksParent) { unsubChecksParent(); unsubChecksParent = null; }
-  parentHwCache = {}; parentTmplItems = []; parentChecksCache = {};
+  // 두 아이의 숙제를 모두 미리 구독 (탭 전환 시 재조회 없이 캐시로 즉시 표시)
+  PARENT_CHILDREN.forEach(name => {
+    if (unsubHwBoth[name]) { unsubHwBoth[name](); unsubHwBoth[name] = null; }
+    parentHwCache[name] = {};
+    unsubHwBoth[name] = db.collection('homework').where('child', '==', name)
+      .onSnapshot(snap => {
+        const cache = {};
+        snap.docs.forEach(d => {
+          const data = d.data();
+          (cache[data.date] = cache[data.date] || []).push({ id: d.id, ...data });
+        });
+        parentHwCache[name] = cache;
+        renderCalendar();
+      }, e => console.error('캘린더 로드 실패:', e));
+  });
   renderCalendar();
-  unsubParent = db.collection('homework').where('child', '==', parentChild)
-    .onSnapshot(snap => {
-      parentHwCache = {};
-      snap.docs.forEach(d => {
-        const data = d.data();
-        if (!parentHwCache[data.date]) parentHwCache[data.date] = [];
-        parentHwCache[data.date].push({ id: d.id, ...data });
-      });
-      renderCalendar();
-    }, e => console.error('캘린더 로드 실패:', e));
   loadMonthChecks();
 }
 
 function loadMonthChecks() {
-  if (unsubChecksParent) { unsubChecksParent(); unsubChecksParent = null; }
-  const yr = calYear, mo = calMonth, child = parentChild;
+  const yr = calYear, mo = calMonth;
   const mm = `${yr}-${String(mo).padStart(2,'0')}`;
   const nextMo = mo === 12 ? 1 : mo + 1;
   const nextYr = mo === 12 ? yr + 1 : yr;
   const nextMm = `${nextYr}-${String(nextMo).padStart(2,'0')}`;
 
-  let resolved = false;
   monthChecksPromise = new Promise(resolve => {
-    db.collection('templates').doc(child).get().then(tmplSnap => {
-      if (calYear !== yr || calMonth !== mo || parentChild !== child) { if (!resolved) { resolved = true; resolve(); } return; }
-      // 템플릿 목록은 체크 데이터와 '함께' 반영해야 함 (목록만 있고 체크는 빈 중간 렌더 → 완료를 미완료로 오표시하는 혼선 방지)
-      const tmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
-      unsubChecksParent = db.collection('dailyChecks')
-        .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
-        .where(firebase.firestore.FieldPath.documentId(), '<',  `${child}_${nextMm}-01`)
-        .onSnapshot(checksSnap => {
-          if (calYear !== yr || calMonth !== mo || parentChild !== child) return;
-          parentTmplItems = tmplItems;
-          parentChecksCache = {};
-          checksSnap.docs.forEach(d => {
-            parentChecksCache[d.id.slice(child.length + 1)] = d.data();
-          });
-          if (!resolved) { resolved = true; resolve(); }
-          renderCalendar();
-        }, e => { console.error('dailyChecks 로드 실패:', e); if (!resolved) { resolved = true; resolve(); } });
-    }).catch(e => { console.error('템플릿 로드 실패:', e); if (!resolved) { resolved = true; resolve(); } });
+    let remaining = PARENT_CHILDREN.length;
+    const done = () => { if (--remaining <= 0) resolve(); };
+    PARENT_CHILDREN.forEach(child => {
+      if (unsubChecksBoth[child]) { unsubChecksBoth[child](); unsubChecksBoth[child] = null; }
+      let settled = false;
+      const settle = () => { if (!settled) { settled = true; done(); } };
+      db.collection('templates').doc(child).get().then(tmplSnap => {
+        if (calYear !== yr || calMonth !== mo) { settle(); return; }
+        // 템플릿 목록은 체크 데이터와 '함께' 반영 (목록만 있고 체크는 빈 중간 렌더로 완료가 미완료로 오표시되는 혼선 방지)
+        const tmplItems = tmplSnap.exists ? (tmplSnap.data().items || []) : [];
+        unsubChecksBoth[child] = db.collection('dailyChecks')
+          .where(firebase.firestore.FieldPath.documentId(), '>=', `${child}_${mm}-01`)
+          .where(firebase.firestore.FieldPath.documentId(), '<',  `${child}_${nextMm}-01`)
+          .onSnapshot(checksSnap => {
+            if (calYear !== yr || calMonth !== mo) return;
+            parentTmplCache[child] = tmplItems;
+            const cache = {};
+            checksSnap.docs.forEach(d => { cache[d.id.slice(child.length + 1)] = d.data(); });
+            parentChecksCache[child] = cache;
+            settle();
+            renderCalendar();
+          }, e => { console.error('dailyChecks 로드 실패:', e); settle(); });
+      }).catch(e => { console.error('템플릿 로드 실패:', e); settle(); });
+    });
   });
 }
 
@@ -1159,7 +1177,7 @@ function navCalendar(dir) {
   calMonth += dir;
   if (calMonth > 12) { calMonth = 1; calYear++; }
   if (calMonth < 1)  { calMonth = 12; calYear--; }
-  parentTmplItems = []; parentChecksCache = {};
+  PARENT_CHILDREN.forEach(n => { parentTmplCache[n] = []; parentChecksCache[n] = {}; });
   renderCalendar();
   loadMonthChecks();
 }
@@ -1170,6 +1188,9 @@ function renderCalendar() {
   const firstWeekday = new Date(y, m - 1, 1).getDay();
   const lastDate     = new Date(y, m, 0).getDate();
   const today        = todayKey();
+  const hwC     = parentHwCache[parentChild]     || {};   // 현재 선택된 아이의 캐시
+  const tmplC   = parentTmplCache[parentChild]   || [];
+  const checksC = parentChecksCache[parentChild] || {};
 
   let html = '<div class="cal-weekdays">';
   ['일','월','화','수','목','금','토'].forEach(d => html += `<span>${d}</span>`);
@@ -1179,11 +1200,11 @@ function renderCalendar() {
 
   for (let date = 1; date <= lastDate; date++) {
     const ds       = `${y}-${String(m).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-    const hw       = parentHwCache[ds] || [];
-    const checks   = parentChecksCache[ds] || {};
+    const hw       = hwC[ds] || [];
+    const checks   = checksC[ds] || {};
     const calDow   = new Date(ds + 'T00:00:00').getDay();
     const calIsWe  = calDow === 0 || calDow === 6;
-    const tmplVisible = parentTmplItems.filter(t => !(calIsWe && t.weekendSkip) && !checks[`hidden_${t.id}`]);
+    const tmplVisible = tmplC.filter(t => !(calIsWe && t.weekendSkip) && !checks[`hidden_${t.id}`] && !(t.archived && ds >= t.archivedDate));
     const tmplDone = tmplVisible.filter(t => checks[t.id] === true).length;
     const tot      = hw.length + tmplVisible.length;
     const don      = hw.filter(h => h.completed).length + tmplDone;
@@ -1226,11 +1247,11 @@ async function openDayDetail(dateStr) {
   // 최대 3초 대기 후 부분 데이터라도 표시
   await Promise.race([monthChecksPromise, new Promise(r => setTimeout(r, 3000))]);
 
-  const hw = parentHwCache[dateStr] || [];
+  const hw = (parentHwCache[parentChild] || {})[dateStr] || [];
   const detailDow = new Date(dateStr + 'T00:00:00').getDay();
   const detailIsWeekend = detailDow === 0 || detailDow === 6;
-  const tmplChecks = parentChecksCache[dateStr] || {};
-  const tmplForChild = parentTmplItems.filter(t => !(detailIsWeekend && t.weekendSkip) && !tmplChecks[`hidden_${t.id}`]);
+  const tmplChecks = (parentChecksCache[parentChild] || {})[dateStr] || {};
+  const tmplForChild = (parentTmplCache[parentChild] || []).filter(t => !(detailIsWeekend && t.weekendSkip) && !tmplChecks[`hidden_${t.id}`] && !(t.archived && dateStr >= t.archivedDate));
 
   const allItems = [
     ...hw.map(h => ({

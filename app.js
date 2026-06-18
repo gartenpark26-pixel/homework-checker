@@ -1091,6 +1091,7 @@ function openParentView() {
   loadParentPoints();
   loadParentMissions();
   loadCouponPool();
+  renderParentTemplates();
 }
 function closeParentView() {
   PARENT_CHILDREN.forEach(n => {
@@ -1107,10 +1108,14 @@ function closeParentView() {
 function setParentChild(name) {
   parentChild = name;
   updateParentChildTabs();
+  parentTmplEditId = null;                                   // 편집 상태 초기화
+  const ps = document.getElementById('ptmpl-submit'); if (ps) ps.textContent = '추가';
+  const pi = document.getElementById('ptmpl-input');  if (pi) pi.value = '';
   renderCalendar();        // 이미 미리 로딩된 캐시로 즉시 표시 (재구독·재조회 안 함)
   renderParentPoints();
   loadParentMissions();
   renderEarnedCoupons();
+  renderParentTemplates();
 }
 function updateParentChildTabs() {
   document.querySelectorAll('.parent-child-tab').forEach(b =>
@@ -1167,6 +1172,7 @@ function loadMonthChecks() {
             parentChecksCache[child] = cache;
             settle();
             renderCalendar();
+            if (child === parentChild) renderParentTemplates();
           }, e => { console.error('dailyChecks 로드 실패:', e); settle(); });
       }).catch(e => { console.error('템플릿 로드 실패:', e); settle(); });
     });
@@ -1301,6 +1307,94 @@ async function openDayDetail(dateStr) {
 function closeDayDetail() {
   document.getElementById('overlay-daydetail').classList.remove('on');
   document.getElementById('modal-daydetail').classList.remove('on');
+}
+
+// ===== 부모: 오늘 숙제 추가 / 고정숙제 관리 (parentChild 기준) =====
+let parentTmplEditId = null;
+
+async function addParentHw() {
+  const input = document.getElementById('phw-input');
+  const title = input.value.trim();
+  if (!title) { input.focus(); return; }
+  const subject = document.getElementById('phw-subj').value;
+  input.value = '';
+  try {
+    // 아이 창과 동일하게, 오늘 날짜로 추가 (실시간 리스너가 캘린더에 즉시 반영)
+    await db.collection('homework').add({
+      child: parentChild, subject, title, completed: false,
+      date: todayKey(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) { console.error('숙제 추가 실패:', e); alert('숙제 추가에 실패했어요.'); }
+}
+
+function renderParentTemplates() {
+  const hwT = document.getElementById('parent-hw-title');
+  const tmT = document.getElementById('parent-tmpl-title');
+  const emoji = parentChild === '시현이' ? '🐰' : '🐻';
+  if (hwT) hwT.textContent = `📝 ${emoji} ${parentChild} 오늘 숙제 추가`;
+  if (tmT) tmT.textContent = `🔁 ${emoji} ${parentChild} 고정 숙제 관리`;
+  const el = document.getElementById('parent-tmpl-list');
+  if (!el) return;
+  const active = (parentTmplCache[parentChild] || []).filter(t => !t.archived);
+  if (active.length === 0) { el.innerHTML = '<p class="mission-none">등록된 고정 숙제가 없어요</p>'; return; }
+  el.innerHTML = active.map(t => `
+    <div class="parent-mission-item">
+      <div class="mission-body"><div class="mission-title">${SUBJ_EMOJI[t.subject]||''} ${esc(t.title)}</div></div>
+      <button class="tmpl-weekend-btn${t.weekendSkip ? ' skip' : ''}" onclick="toggleParentTmplWeekend('${t.id}')" title="${t.weekendSkip ? '평일만 표시 중' : '매일 표시 중'}">${t.weekendSkip ? '평일만' : '매일'}</button>
+      <button class="mission-del-btn" onclick="editParentTmpl('${t.id}')" aria-label="수정">✏️</button>
+      <button class="mission-del-btn" onclick="deleteParentTmpl('${t.id}')" aria-label="삭제">🗑️</button>
+    </div>`).join('');
+}
+
+// 템플릿 변경: 낙관적 로컬 반영(캘린더·목록 즉시) 후 Firestore 저장
+function _writeParentTmpl(items) {
+  parentTmplCache[parentChild] = items;
+  renderParentTemplates();
+  renderCalendar();
+  db.collection('templates').doc(parentChild).set({ items })
+    .catch(e => { console.error('고정숙제 저장 실패:', e); alert('저장에 실패했어요.'); });
+}
+
+function submitParentTmpl() {
+  const input = document.getElementById('ptmpl-input');
+  const title = input.value.trim();
+  if (!title) { input.focus(); return; }
+  const subject = document.getElementById('ptmpl-subj').value;
+  const items = (parentTmplCache[parentChild] || []).slice();
+  if (parentTmplEditId) {
+    const idx = items.findIndex(t => t.id === parentTmplEditId);
+    if (idx >= 0) items[idx] = { ...items[idx], subject, title };   // weekendSkip/archived 보존
+    parentTmplEditId = null;
+    document.getElementById('ptmpl-submit').textContent = '추가';
+  } else {
+    items.push({ id: genId(), subject, title, weekendSkip: false });
+  }
+  input.value = '';
+  _writeParentTmpl(items);
+}
+
+function editParentTmpl(id) {
+  const t = (parentTmplCache[parentChild] || []).find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('ptmpl-input').value = t.title;
+  document.getElementById('ptmpl-subj').value  = t.subject || '수학';
+  parentTmplEditId = id;
+  document.getElementById('ptmpl-submit').textContent = '수정';
+  document.getElementById('ptmpl-input').focus();
+}
+
+function toggleParentTmplWeekend(id) {
+  const items = (parentTmplCache[parentChild] || []).map(t =>
+    t.id === id ? { ...t, weekendSkip: !t.weekendSkip } : t);
+  _writeParentTmpl(items);
+}
+
+async function deleteParentTmpl(id) {
+  if (!confirm('이 고정 숙제를 삭제할까요? 🗑️\n(오늘부터 표시 안 되고, 과거 완료 기록은 보존돼요)')) return;
+  const items = (parentTmplCache[parentChild] || []).map(t =>
+    t.id === id ? { ...t, archived: true, archivedDate: todayKey() } : t);
+  _writeParentTmpl(items);
 }
 
 // ===== Service Worker =====

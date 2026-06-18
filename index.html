@@ -245,6 +245,37 @@
       <span>% = 부분 완료</span>
     </div>
 
+    <!-- 오늘 숙제 추가 (부모) -->
+    <div class="parent-points-section">
+      <div class="parent-points-title" id="parent-hw-title">📝 오늘 숙제 추가</div>
+      <div class="mission-add-row">
+        <select id="phw-subj" class="mission-reward-sel" aria-label="과목">
+          <option value="수학">📐 수학</option>
+          <option value="국어">📖 국어</option>
+          <option value="영어">🔤 영어</option>
+          <option value="기타">✏️ 기타</option>
+        </select>
+        <input id="phw-input" class="mission-input" type="text" placeholder="오늘 숙제 (예: 받아쓰기)" maxlength="60" autocomplete="off" onkeydown="if(event.key==='Enter') addParentHw()">
+        <button class="mission-add-btn" onclick="addParentHw()">추가</button>
+      </div>
+    </div>
+
+    <!-- 고정 숙제 관리 (부모) -->
+    <div class="parent-points-section">
+      <div class="parent-points-title" id="parent-tmpl-title">🔁 고정 숙제 관리</div>
+      <div class="mission-add-row">
+        <select id="ptmpl-subj" class="mission-reward-sel" aria-label="과목">
+          <option value="수학">📐 수학</option>
+          <option value="국어">📖 국어</option>
+          <option value="영어">🔤 영어</option>
+          <option value="기타">✏️ 기타</option>
+        </select>
+        <input id="ptmpl-input" class="mission-input" type="text" placeholder="반복 숙제 (예: 독서 30분)" maxlength="60" autocomplete="off" onkeydown="if(event.key==='Enter') submitParentTmpl()">
+        <button class="mission-add-btn" id="ptmpl-submit" onclick="submitParentTmpl()">추가</button>
+      </div>
+      <div id="parent-tmpl-list"></div>
+    </div>
+
     <!-- 포인트 현황 섹션 -->
     <div class="parent-points-section">
       <div class="parent-points-title">⭐ 포인트 현황</div>
